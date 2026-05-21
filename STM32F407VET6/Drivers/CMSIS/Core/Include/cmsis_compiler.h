@@ -21,6 +21,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ /* bản dịch : 
+ Copyright (c) 2009-2018 Arm Limited. All rights reserved.
+ SPDX-License-Identifier: Apache-2.0
+*/
 
 #ifndef __CMSIS_COMPILER_H
 #define __CMSIS_COMPILER_H
@@ -138,6 +142,10 @@
    * Please use "carm -?i" to get an up to date list of all intrinsics,
    * Including the CMSIS ones.
    */
+   /* bản dịch: Các hàm CMSIS đã được triển khai như các intrinsics trong trình biên dịch.
+    * Vui lòng sử dụng "carm -?i" để lấy danh sách cập nhật nhất của tất cả các intrinsics,
+    * Bao gồm cả các CMSIS ones.
+    */
 
   #ifndef   __ASM
     #define __ASM                                  __asm

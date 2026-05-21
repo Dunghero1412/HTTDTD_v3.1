@@ -2,18 +2,18 @@
 // File: bme280.cpp
 // Mô tả: Triển khai driver BME280.
 // ============================================================================
-#include "bme280.hpp"
-#include "system.h"
+#include "bme280.hpp" // Header file cho BME280
+#include "system.h"   // Header file cho các hằng số và cấu hình hệ thống
 
 extern SPI_HandleTypeDef hspi2;   // Khai báo ở main.cpp
 
-uint16_t BME280::dig_T1 = 0;
-int16_t  BME280::dig_T2 = 0;
-int16_t  BME280::dig_T3 = 0;
+uint16_t BME280::dig_T1 = 0; // Hệ số bù nhiệt 1
+int16_t  BME280::dig_T2 = 0; // Hệ số bù nhiệt 2
+int16_t  BME280::dig_T3 = 0; // Hệ số bù nhiệt 3
 
 // Chân CS (PB12)
-void BME280::csLow()  { HAL_GPIO_WritePin(BME_CS_PORT, BME_CS_PIN, GPIO_PIN_RESET); }
-void BME280::csHigh() { HAL_GPIO_WritePin(BME_CS_PORT, BME_CS_PIN, GPIO_PIN_SET); }
+void BME280::csLow()  { HAL_GPIO_WritePin(BME_CS_PORT, BME_CS_PIN, GPIO_PIN_RESET); } // Kích hoạt chip select
+void BME280::csHigh() { HAL_GPIO_WritePin(BME_CS_PORT, BME_CS_PIN, GPIO_PIN_SET); }  // Ngừng chip select
 
 // Ghi 1 byte vào thanh ghi (địa chỉ 7 bit, bit RW=0)
 void BME280::writeRegister(uint8_t reg, uint8_t value) {
@@ -79,11 +79,11 @@ bool BME280::init() {
 
     // Cấu hình oversampling và chế độ
     // ctrl_hum (0xF2): osrs_h = 1 (x1)
-    writeRegister(0xF2, 0x01);
+    writeRegister(0xF2, 0x01); // 0000 0001
     // ctrl_meas (0xF4): osrs_t = 1, osrs_p = 1, mode = forced
-    writeRegister(0xF4, 0x25); // 001 001 01
+    writeRegister(0xF4, 0x25); // 0010 0101
     // config (0xF5): standby 0.5ms, filter off, spi 3-wire tắt
-    writeRegister(0xF5, 0x00);
+    writeRegister(0xF5, 0x00); // 0000 0000
 
     // Đọc calibration
     return readCalibrationData();

@@ -55,7 +55,7 @@
 #define HAL_MMC_MODULE_ENABLED      0
 #define HAL_SPDIFRX_MODULE_ENABLED  0
 #define HAL_USART_MODULE_ENABLED    0   // Dùng UART thay vì USART
-#define HAL_WWDG_MODULE_ENABLED     0
+#define HAL_WWDG_MODULE_ENABLED     0   // Không dùng WWDG
 #define HAL_FMPI2C_MODULE_ENABLED   0
 #define HAL_FMPI2C_EX_MODULE_ENABLED 0
 #define HAL_QSPI_MODULE_ENABLED     0
@@ -69,7 +69,7 @@
 
 // ---------- Cấu hình tần số HSI (nội) ----------
 #if !defined(HSI_VALUE)
-  #define HSI_VALUE    16000000U
+  #define HSI_VALUE    16000000U  // Internal RC 16 MHz
 #endif
 
 // ---------- Cấu hình xung nhịp SysTick ----------
@@ -152,7 +152,7 @@
 //  #define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t *)__FILE__, __LINE__))
 //  void assert_failed(uint8_t* file, uint32_t line);
 //#else
-  #define assert_param(expr) ((void)0U)
+  #define assert_param(expr) ((void)0U)  // Tắt assert_param để tối ưu
 //#endif
 
 #ifdef __cplusplus
