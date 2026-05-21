@@ -210,3 +210,11 @@ void MX_SPI3_Init(void) {
     HAL_NVIC_SetPriority(SPI3_IRQn, 3, 0);
     HAL_NVIC_EnableIRQ(SPI3_IRQn);
 }
+#ifdef  USE_FULL_ASSERT
+extern "C" {
+    void assert_failed(uint8_t *file, uint32_t line) {
+        /* Bạn có thể thêm code xử lý lỗi hoặc vòng lặp vô hạn ở đây */
+        while (1) {}
+    }
+}
+#endif

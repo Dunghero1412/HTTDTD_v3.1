@@ -60,10 +60,9 @@ ASFLAGS  := $(MCU) $(MCU_DEFINES) $(INCLUDES) -c
 # ---------- Cờ liên kết ----------
 LDSCRIPT := $(PROJECT_DIR)/STM32F407VETx_FLASH.ld
 LIBS     := -lc -lm -lnosys -lgcc
-LDFLAGS  := $(MCU)  -T$(LDSCRIPT) $(LIBS) \
+LDFLAGS  := $(MCU) --specs=nano.specs --specs=nosys.specs  -T$(LDSCRIPT) $(LIBS) \
             -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref \
-            -Wl,--gc-sections \
-            -nostartfiles
+            -Wl,--gc-sections 
 
 # ---------- Các file nguồn ----------
 # C++ source (ứng dụng chính)
