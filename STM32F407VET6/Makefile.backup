@@ -1,0 +1,154 @@
+# ============================================================================
+# Makefile cho dự án TDOA quân sự - STM32F407VET6
+# Biên dịch bằng arm-none-eabi-gcc/g++ (C++11)
+# ============================================================================
+
+# ---------- Thư mục dự án (giả sử đây là thư mục gốc) ----------
+PROJECT_DIR = .
+
+# ---------- Tên file đầu ra ----------
+TARGET = tdoa_f407
+BUILD_DIR = build
+
+# ---------- Công cụ biên dịch ----------
+CC      = arm-none-eabi-gcc
+CXX     = arm-none-eabi-g++
+AS      = arm-none-eabi-gcc -x assembler-with-cpp
+OBJCOPY = arm-none-eabi-objcopy
+OBJDUMP = arm-none-eabi-objdump
+SIZE    = arm-none-eabi-size
+
+# ---------- CPU và FPU ----------
+CPU     = -mcpu=cortex-m4
+FPU     = -mfpu=fpv4-sp-d16
+FLOAT-ABI = -mfloat-abi=hard
+MCU     = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
+
+# ---------- Các cờ biên dịch chung ----------
+# Cảnh báo và tối ưu (dùng -Og khi debug, -O2 khi release)
+COMMON_FLAGS = -Wall -Wextra -Wno-unused-parameter -Og -g
+# Các đường dẫn include
+INCLUDES = \
+    -I$(PROJECT_DIR)/Core/Inc \
+    -I$(PROJECT_DIR)/Drivers/STM32F4xx_HAL_Driver/Inc \
+    -I$(PROJECT_DIR)/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy \
+    -I$(PROJECT_DIR)/Drivers/CMSIS/Device/ST/STM32F4xx/Include \
+    -I$(PROJECT_DIR)/Drivers/CMSIS/Include
+
+# ---------- Cờ cho C và C++ riêng ----------
+CFLAGS   = $(MCU) $(COMMON_FLAGS) $(INCLUDES) -std=gnu11 -fdata-sections -ffunction-sections
+CXXFLAGS = $(MCU) $(COMMON_FLAGS) $(INCLUDES) -std=c++11 -fno-rtti -fno-exceptions -fdata-sections -ffunction-sections
+
+# Cờ cho Assembler
+ASFLAGS = $(MCU) $(INCLUDES) -c -x assembler-with-cpp
+
+# ---------- Cờ liên kết ----------
+LDSCRIPT = $(PROJECT_DIR)/STM32F407VETx_FLASH.ld
+LIBS     = -lc -lm -lnosys
+LDFLAGS  = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBS) \
+           -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref \
+           -Wl,--gc-sections
+
+# ---------- Các file nguồn ----------
+# C++ source (từ Core/Src)
+CPP_SOURCES = \
+    Core/Src/main.cpp \
+    Core/Src/tdoa_manager.cpp \
+    Core/Src/spi_slave.cpp \
+    Core/Src/bme280.cpp \
+    Core/Src/temperature_logger.cpp
+
+# C source (HAL, CMSIS system)
+C_SOURCES = \
+    Core/Src/system_stm32f4xx.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_tim_ex.c \
+    Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c
+
+# Nếu cần thêm file HAL khác, bạn có thể dùng wildcard:
+# HAL_SRCDIR = Drivers/STM32F4xx_HAL_Driver/Src
+# C_SOURCES += $(wildcard $(HAL_SRCDIR)/*.c)
+
+# ASM source (startup)
+ASM_SOURCES = Core/Startup/startup_stm32f407xx.s
+
+# ---------- Tạo danh sách object từ tên file (thay đổi đuôi thành .o, đặt trong BUILD_DIR) ----------
+# Dùng hàm patsubst để chuyển đổi
+CPP_OBJS = $(addprefix $(BUILD_DIR)/, $(notdir $(CPP_SOURCES:.cpp=.o)))
+C_OBJS   = $(addprefix $(BUILD_DIR)/, $(notdir $(C_SOURCES:.c=.o)))
+ASM_OBJS = $(addprefix $(BUILD_DIR)/, $(notdir $(ASM_SOURCES:.s=.o)))
+OBJS     = $(CPP_OBJS) $(C_OBJS) $(ASM_OBJS)
+
+# ---------- Thư mục chứa file object ----------
+$(shell mkdir -p $(BUILD_DIR))
+
+# ---------- Quy tắc chính ----------
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+
+# Liên kết tất cả các object thành file ELF
+$(BUILD_DIR)/$(TARGET).elf: $(OBJS)
+	@echo "Liên kết $@"
+	$(CXX) $(LDFLAGS) -o $@ $^
+	$(SIZE) $@
+
+# Tạo file hex
+$(BUILD_DIR)/$(TARGET).hex: $(BUILD_DIR)/$(TARGET).elf
+	@echo "Tạo file HEX"
+	$(OBJCOPY) -O ihex $< $@
+
+# Tạo file bin
+$(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf
+	@echo "Tạo file BIN"
+	$(OBJCOPY) -O binary $< $@
+
+# ---------- Biên dịch các file C++ ----------
+# Mỗi file .cpp sẽ được biên dịch thành .o với cùng tên file nhưng nằm trong BUILD_DIR.
+# Để ánh xạ từng file riêng ta cần chỉ định rõ đường dẫn nguồn và output.
+# Quy tắc mẫu cho C++: $(BUILD_DIR)/%.o: đường/dẫn/tới/%.cpp
+# Tuy nhiên file nguồn nằm trong thư mục con khác nhau, ta định nghĩa từng mục tiêu riêng.
+# Đơn giản hóa: dùng vpath và quy tắc chung với tên file không đường dẫn.
+# Đảm bảo không trùng tên file giữa các thư mục.
+
+vpath %.cpp Core/Src
+vpath %.c Core/Src:Drivers/STM32F4xx_HAL_Driver/Src
+vpath %.s Core/Startup
+
+# Quy tắc biên dịch C++
+$(BUILD_DIR)/%.o: %.cpp Makefile | $(BUILD_DIR)
+	@echo "Biên dịch C++ $<"
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+# Quy tắc biên dịch C
+$(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
+	@echo "Biên dịch C $<"
+	$(CC) -c $(CFLAGS) $< -o $@
+
+# Quy tắc biên dịch ASM
+$(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
+	@echo "Biên dịch ASM $<"
+	$(AS) -c $(ASFLAGS) $< -o $@
+
+# Đảm bảo thư mục build tồn tại
+$(BUILD_DIR):
+	mkdir -p $@
+
+# ---------- Dọn dẹp ----------
+clean:
+	rm -rf $(BUILD_DIR)
+
+# ---------- Nạp chương trình (sử dụng ST-Link) ----------
+flash: $(BUILD_DIR)/$(TARGET).bin
+	@echo "Nạp firmware..."
+	st-flash write $< 0x08000000
+
+# ---------- Mục tiêu phụ ----------
+.PHONY: all clean flash

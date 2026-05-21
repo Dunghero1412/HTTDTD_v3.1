@@ -3,6 +3,7 @@
 // Mô tả: Triển khai driver BME280.
 // ============================================================================
 #include "bme280.hpp"
+#include "system.h"
 
 extern SPI_HandleTypeDef hspi2;   // Khai báo ở main.cpp
 
