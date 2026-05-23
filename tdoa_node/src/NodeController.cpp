@@ -14,8 +14,8 @@
 // Hàm parse ID từ đối số dòng lệnh
 NodeID parseNodeID(const std::string& str) {
     NodeID id;
-    id.col = str[0] - '0'; // '1' -> 1
-    id.row = std::toupper(str[1]);
+    id.col = str[0] - '0'; // '1' -> 1 // chuyển ký tự thành số
+    id.row = std::toupper(str[1]); // 'A' -> 'A' // chuyển ký tự thành chữ hoa
     return id;
 }
 std::string nodeIDString(const NodeID& id) {
@@ -30,28 +30,28 @@ NodeController::NodeController(const NodeID& id)
         std::cerr << "Failed to open GPIO chip\n";
         exit(1);
     }
-    // Claim outputs
-    lgGpioClaimOutput(gpioHandle, 0, GPIO_MAIN_MOTOR, LG_LOW);
+    // nhận output, thiết lập mức thấp ban đầu
+    lgGpioClaimOutput(gpioHandle, 0, GPIO_MAIN_MOTOR, LG_LOW); 
     lgGpioClaimOutput(gpioHandle, 0, GPIO_FORCE_TRIGGER, LG_LOW);
     lgGpioClaimOutput(gpioHandle, 0, GPIO_RECEIVED_COMPLETE, LG_LOW);
     lgGpioClaimOutput(gpioHandle, 0, GPIO_FORCE_RESET, LG_LOW);
     lgGpioClaimOutput(gpioHandle, 0, GPIO_HARD_RESET, LG_LOW);
-    // Claim input
+    // nhận input, thiết lập mức thấp ban đầu
     lgGpioClaimInput(gpioHandle, 0, GPIO_LOAD_DATA);
 
     // Khởi tạo SPI
     if (!spi.init(SPI_CHANNEL, SPI_SPEED)) {
-        std::cerr << "SPI init failed\n";
+        std::cerr << "SPI init failed\n"; // log lỗi , dừng chương trình
         exit(1);
     }
 
     // Khởi tạo LoRa
     int sf = SF_BY_COL[nodeID.col - 1]; // col index 0..4
     if (!lora.init(LORA_UART, LORA_BAUD, sf, FREQ_MHZ)) {
-        std::cerr << "LoRa init failed\n";
+        std::cerr << "LoRa init failed\n"; // log lỗi , dừng chương trình
         exit(1);
     }
-    lora.setReceiveCallback([this](const std::string& msg) { onLoRaReceived(msg); });
+    lora.setReceiveCallback([this](const std::string& msg) { onLoRaReceived(msg); }); // callback khi nhận được message
 
     // Bắt đầu thread nhận LoRa
     loraThread = std::thread(&NodeController::loraRxTask, this);
@@ -137,19 +137,19 @@ void NodeController::processCommand(const std::string& cmd) {
         return;
     }
 
-    bool isUp = (action == "UP");
-    bool isDown = (action == "DOWN");
-    bool isHR = (action == "HR");
+    bool isUp = (action == "UP");      // Kiểm tra hành động UP
+    bool isDown = (action == "DOWN");  // Kiểm tra hành động DOWN
+    bool isHR = (action == "HR");      // Kiểm tra hành động HR
 
     // Kiểm tra MARKING
     if (type == "MARKING") {
         if (isUp) {
             setMotor(true);
-            state = MARKING;
+            state = MARKING; // chuyển trạng thái sang MARKING
             std::cout << "MARKING ON\n";
         } else if (isDown) {
             setMotor(false);
-            state = IDLE;
+            state = IDLE; // chuyển trạng thái sang IDLE
             std::cout << "MARKING OFF\n";
         }
         return;
@@ -201,27 +201,27 @@ void NodeController::processCommand(const std::string& cmd) {
 }
 
 void NodeController::setMotor(bool on) {
-    lgGpioWrite(gpioHandle, GPIO_MAIN_MOTOR, on ? 1 : 0);
+    lgGpioWrite(gpioHandle, GPIO_MAIN_MOTOR, on ? 1 : 0); // Bật/tắt motor
 }
 
 void NodeController::setTrigger(bool on) {
-    lgGpioWrite(gpioHandle, GPIO_FORCE_TRIGGER, on ? 1 : 0);
+    lgGpioWrite(gpioHandle, GPIO_FORCE_TRIGGER, on ? 1 : 0); // Bật/tắt trigger
 }
 
 void NodeController::pulseReceivedComplete() {
-    lgGpioWrite(gpioHandle, GPIO_RECEIVED_COMPLETE, 1);
+    lgGpioWrite(gpioHandle, GPIO_RECEIVED_COMPLETE, 1); // Bật pulse Received Complete
     std::this_thread::sleep_for(std::chrono::milliseconds(RECEIVED_COMPLETE_PULSE));
-    lgGpioWrite(gpioHandle, GPIO_RECEIVED_COMPLETE, 0);
+    lgGpioWrite(gpioHandle, GPIO_RECEIVED_COMPLETE, 0); // Tắt pulse Received Complete
 }
 
 void NodeController::pulseForceReset() {
-    lgGpioWrite(gpioHandle, GPIO_FORCE_RESET, 1);
+    lgGpioWrite(gpioHandle, GPIO_FORCE_RESET, 1); // Bật pulse Force Reset
     std::this_thread::sleep_for(std::chrono::milliseconds(FORCE_RESET_PULSE));
-    lgGpioWrite(gpioHandle, GPIO_FORCE_RESET, 0);
+    lgGpioWrite(gpioHandle, GPIO_FORCE_RESET, 0); // Tắt pulse Force Reset
 }
 
 void NodeController::hardResetSTM32() {
-    lgGpioWrite(gpioHandle, GPIO_HARD_RESET, 0); // Kéo NRST xuống
+    lgGpioWrite(gpioHandle, GPIO_HARD_RESET, 0); // Kéo NRST xuống , thucej hiện việc hard reset trên stm32
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     lgGpioWrite(gpioHandle, GPIO_HARD_RESET, 1); // Thả
 }
