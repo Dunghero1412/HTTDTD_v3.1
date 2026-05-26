@@ -1,5 +1,10 @@
-```markdown
-# GIỚI HẠN VẬN HÀNH (OPERATION LIMITATION)
+# GIỚI HẠN VẬN HÀNH (OPERATION LIMITATIONS)
+
+**Version:** 1.0  
+**Ngày:** 26 Tháng 5 Năm 2026  
+**Cập nhật lần cuối:** 26 Tháng 5 Năm 2026  
+
+---
 
 Hệ thống này chịu ảnh hưởng bởi:
 - môi trường,
@@ -11,7 +16,7 @@ Hệ thống này chịu ảnh hưởng bởi:
 
 ---
 
-# 1. GIỚI HẠN MÔI TRƯỜNG
+## 1. GIỚI HẠN MÔI TRƯỜNG
 
 Độ chính xác có thể giảm do:
 - nhiệt độ,
@@ -26,7 +31,7 @@ Hệ thống này chịu ảnh hưởng bởi:
 
 ---
 
-# 2. GIỚI HẠN CẢM BIẾN
+## 2. GIỚI HẠN CẢM BIẾN
 
 Cảm biến Piezoelectric có thể xuất hiện:
 - lão hóa,
@@ -39,10 +44,10 @@ Sensor hỏng hoặc xuống cấp có thể gây sai lệch kết quả TDOA.
 
 ---
 
-# 3. GIỚI HẠN ĐỒNG BỘ THỜI GIAN
+## 3. GIỚI HẠN ĐỒNG BỘ THỜI GIAN
 
 Độ chính xác timestamp phụ thuộc vào:
-- clock timer,
+- clock timer (168MHz),
 - cấu hình MCU,
 - DMA,
 - interrupt latency,
@@ -53,7 +58,7 @@ Sai cấu hình timer có thể gây sai lệch nghiêm trọng vị trí tính 
 
 ---
 
-# 4. GIỚI HẠN LOẠI ĐẠN
+## 4. GIỚI HẠN LOẠI ĐẠN
 
 Hệ thống có thể cho kết quả khác nhau tùy:
 - cỡ đạn,
@@ -67,7 +72,7 @@ KHÔNG đảm bảo hoạt động giống nhau với mọi loại vũ khí và 
 
 ---
 
-# 5. GIỚI HẠN BẮN LIÊN THANH
+## 5. GIỚI HẠN BẮN LIÊN THANH
 
 Nhiều phát bắn liên tiếp có thể:
 - chồng tín hiệu,
@@ -78,7 +83,7 @@ Nhiều phát bắn liên tiếp có thể:
 
 ---
 
-# 6. GIỚI HẠN TRIỂN KHAI
+## 6. GIỚI HẠN TRIỂN KHAI
 
 Hệ thống giả định:
 - cảm biến được lắp đúng vị trí,
@@ -90,12 +95,12 @@ Mọi thay đổi vị trí sensor đều yêu cầu hiệu chuẩn lại.
 
 ---
 
-# 7. GIỚI HẠN THUẬT TOÁN
+## 7. GIỚI HẠN THUẬT TOÁN
 
 Kết quả tọa độ được tính bằng:
 - thuật toán TDOA,
-- mô hình toán học,
-- và tối ưu phi tuyến.
+- mô hình toán học Chan method,
+- và tối ưu phi tuyến (Levenberg-Marquardt).
 
 Trong điều kiện dữ liệu nhiễu hoặc bất thường:
 - thuật toán có thể không hội tụ,
@@ -104,7 +109,7 @@ Trong điều kiện dữ liệu nhiễu hoặc bất thường:
 
 ---
 
-# 8. GIỚI HẠN NGUỒN ĐIỆN
+## 8. GIỚI HẠN NGUỒN ĐIỆN
 
 Nguồn cấp không ổn định có thể gây:
 - reset MCU,
@@ -115,7 +120,7 @@ Nguồn cấp không ổn định có thể gây:
 
 ---
 
-# 9. YÊU CẦU BẢO TRÌ
+## 9. YÊU CẦU BẢO TRÌ
 
 Hệ thống PHẢI được:
 - kiểm tra định kỳ,
@@ -127,7 +132,7 @@ trước khi sử dụng thực tế.
 
 ---
 
-# 10. TRÁCH NHIỆM VẬN HÀNH
+## 10. TRÁCH NHIỆM VẬN HÀNH
 
 Trách nhiệm cuối cùng về an toàn luôn thuộc về:
 - người vận hành,
@@ -137,4 +142,14 @@ Trách nhiệm cuối cùng về an toàn luôn thuộc về:
 Hệ thống này chỉ là công cụ hỗ trợ kỹ thuật.
 
 KHÔNG phải hệ thống tự động tuyệt đối.
-```
+
+---
+
+## LIÊN HỆ HỖ TRỢ
+
+Nếu phát hiện lỗi, sai sót, hoặc có câu hỏi:
+- **Tác giả:** Chiêm Dũng (Dunghero1412)
+- **Repository:** https://github.com/Dunghero1412/HTTDTD_v3.1
+- **Issues:** https://github.com/Dunghero1412/HTTDTD_v3.1/issues
+
+**GHI NHỚ:** Mọi vấn đề phải được báo cáo ngay trước khi tiếp tục vận hành.
