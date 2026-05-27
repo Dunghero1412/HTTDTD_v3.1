@@ -1,9 +1,8 @@
 # TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM (DISCLAIMER)
 
 Hệ thống này là nền tảng thử nghiệm phục vụ:
-- nghiên cứu,
-- huấn luyện,
-- đánh giá kỹ thuật,
+- huấn luyện
+- đánh giá kỹ thuật
 - và hỗ trợ xác định tọa độ điểm va chạm bằng phương pháp TDOA (Time Difference Of Arrival).
 
 Hệ thống sử dụng:
@@ -23,7 +22,13 @@ Các rủi ro tiềm ẩn bao gồm:
   - Cho phép đạn gây sát thương tính mạng khi không phát hiện đúng vị trí
   - Mất kiểm soát khu vực an toàn thao trường
 - **Lỗi cảm biến hoặc xử lý tín hiệu:** Có thể không phát hiện va chạm hoặc phát hiện sai mục tiêu
+- **Lỗi do chủ quan:** có thể gây mất an toàn tính mạng do việc tuân thủ kỹ luật thao trường bị vi phạm nghiêm trọng
 - **Không đảm bảo độ tin cậy 100%:** KHÔNG được xem như thiết bị chính để xác nhận an toàn
+
+- TÔI - người phát triển dự án xin TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM đối với bất kỳ rủi ro, tai nạn, thiệt hại tài sản, nhân mạng, uy tín, kết quả do việc sử dugj mã nguồn gây ra. toàn bộ dự án đều được cấp phép theo giấy phép mã nguồn mở Apache 2.0 và được cung cấp **"NGUYÊN TRẠNG" (AS-IS)**, mọi cá nhân, đơn vị, tổ chức sử dụng mã nguồn đều phải tự kiểm tra, thử nghiệm, lập kế hoạch, quán triệt nội quy, quy định, kỹ luật liên quan đến việc sử dụng thiết bị và mã nguồn.
+
+- TÔI - không chịu bất kỳ trách nhiệm nào dù là diễn đạt hay ngụ ý liên quan đến bất kỳ thiệt hại nào do việc sử dụng mã nguồn và thiết bị gây ra.
+- NGƯỜI VẬN HÀNH - phải tự đảm bảo mọi chức năng của mã nguồn, thiết bị đã được hiệu chỉnh, kiểm tra và các vấn đề liên quan dến an toàn thao trường, trường bắn đã nằm trong tầm kiểm soát trước khi kích hoạt thiết bị.
 
 ## LƯU Ý QUAN TRỌNG
 
@@ -51,11 +56,11 @@ Sai số có thể xuất hiện do:
 ## GIỚI HẠN TRÁCH NHIỆM
 
 Đơn vị phát triển, vận hành hoặc bàn giao hệ thống KHÔNG chịu trách nhiệm đối với:
-- **Thiệt hại tính mạng:** Thương tích nhân viên, tai nạn thao trường chết người do sai lệch kết quả
-- **Thiệt hại tài sản:** Phá hủy cơ sở vật chất, thiết bị, hoặc hạ tầng
-- **Tai nạn thao trường:** Cháy nổ, mất kiểm soát thao trường, hoặc mất an toàn do không phát hiện va chạm
-- **Sai lệch kết quả:** Mất kiểm soát quỹ đạo đạn, không xác định được vị trí va chạm thực tế
-- **Mất an toàn:** Lỗi hệ thống dẫn đến không duy trì được vùng an toàn thao trường
+- **Thiệt hại tính mạng:** Thương tích nhân viên, tai nạn thao trường chết người do vận hành sai quy trình đã được ban hành, vi phạm kỹ luật liên quan đến vấn đề đảm bảo an toàn nhân mạng trên thao trường.
+- **Thiệt hại tài sản:** Phá hủy cơ sở vật chất, thiết bị, hoặc hạ tầng do xạ thủ bắn lệch hoặc việc lắp đặt sai quy trình lắp đặt chuẩn đã được ban hành.
+- **Tai nạn thao trường:** Cháy nổ, mất kiểm soát thao trường, hoặc mất an toàn do không tuân thủ nội quy, quy định và kỹ luật.
+- **Sai lệch kết quả:** Mất kiểm soát quỹ đạo đạn, không xác định được vị trí va chạm thực tế do hiệu chỉnh , chỉnh sửa mã nguồn, lắp đặt, bố trí node hoặc sensor không tuân thủ theo quy trình và phương thức lắp đặt được ban hành.
+- **Mất an toàn:** Lỗi hệ thống dẫn đến không duy trì được vùng an toàn thao trường hoặc tác nhân do con người gây ra.
 - Hoặc các hậu quả phát sinh khác
 do:
 - vận hành sai quy trình,
