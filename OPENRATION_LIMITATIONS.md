@@ -1,155 +1,230 @@
-# GIỚI HẠN VẬN HÀNH (OPERATION LIMITATIONS)
+GIỚI HẠN VẬN HÀNH (OPERATION LIMITATIONS)
 
-**Version:** 1.0  
-**Ngày:** 26 Tháng 5 Năm 2026  
-**Cập nhật lần cuối:** 26 Tháng 5 Năm 2026  
-
----
-
-Hệ thống này chịu ảnh hưởng bởi:
-- môi trường,
-- cấu hình phần cứng,
-- điều kiện thao trường,
-- và đặc tính vật lý của đầu đạn.
-
-Độ chính xác và độ ổn định có thể thay đổi tùy điều kiện sử dụng thực tế.
+Version: 3.1.37 (Stable)
+Ngày phát hành: 2026-05-17
+Cập nhật lần cuối: 2026-05-26
 
 ---
 
-## 1. GIỚI HẠN MÔI TRƯỜNG
+1. TỔNG QUAN
 
-Độ chính xác có thể giảm do:
-- nhiệt độ,
-- độ ẩm,
-- gió,
-- mưa,
-- bụi,
-- rung động,
-- phản xạ âm,
-- địa hình,
-- hoặc vật cản xung quanh.
+Hệ thống được thiết kế nhằm hỗ trợ xác định tọa độ điểm va chạm bằng phương pháp TDOA (Time Difference Of Arrival).
 
----
+Độ chính xác và độ ổn định của hệ thống phụ thuộc vào:
 
-## 2. GIỚI HẠN CẢM BIẾN
+- Điều kiện môi trường
+- Cấu hình phần cứng
+- Chất lượng tín hiệu đầu vào
+- Điều kiện thao trường
+- Phương pháp triển khai
+- Và đặc tính vật lý của đầu đạn
 
-Cảm biến Piezoelectric có thể xuất hiện:
-- lão hóa,
-- lệch độ nhạy,
-- sai số cơ học,
-- trôi tín hiệu,
-- hoặc thời gian đáp ứng không đồng đều.
+Kết quả do hệ thống cung cấp có thể thay đổi tùy theo điều kiện vận hành thực tế.
 
-Sensor hỏng hoặc xuống cấp có thể gây sai lệch kết quả TDOA.
+Hệ thống không bảo đảm độ chính xác tuyệt đối trong mọi tình huống.
 
 ---
 
-## 3. GIỚI HẠN ĐỒNG BỘ THỜI GIAN
+2. GIỚI HẠN MÔI TRƯỜNG
+
+Hiệu suất và độ chính xác của hệ thống có thể suy giảm do các yếu tố môi trường, bao gồm nhưng không giới hạn:
+
+- Nhiệt độ môi trường
+- Độ ẩm không khí
+- Gió mạnh
+- Mưa hoặc hơi nước
+- Bụi và rung động cơ học
+- Phản xạ âm thanh
+- Địa hình phức tạp
+- Vật cản xung quanh
+- Nhiễu điện từ
+
+Các yếu tố trên có thể ảnh hưởng trực tiếp đến chất lượng tín hiệu thu nhận và sai số tính toán TDOA.
+
+---
+
+3. GIỚI HẠN CẢM BIẾN
+
+Cảm biến Piezoelectric có thể phát sinh sai số do:
+
+- Lão hóa vật liệu
+- Lệch độ nhạy giữa các cảm biến
+- Sai số cơ học
+- Trôi tín hiệu theo thời gian
+- Thời gian đáp ứng không đồng đều
+- Lắp đặt không chính xác
+- Tác động rung hoặc va đập cơ học
+
+Cảm biến xuống cấp hoặc hoạt động bất thường có thể gây sai lệch đáng kể kết quả định vị.
+
+---
+
+4. GIỚI HẠN ĐỒNG BỘ THỜI GIAN
 
 Độ chính xác timestamp phụ thuộc vào:
-- clock timer (168MHz),
-- cấu hình MCU,
-- DMA,
-- interrupt latency,
-- comparator propagation delay,
-- và chất lượng tín hiệu analog.
 
-Sai cấu hình timer có thể gây sai lệch nghiêm trọng vị trí tính toán.
+- Clock timer hệ thống
+- Cấu hình MCU
+- DMA latency
+- Interrupt latency
+- Comparator propagation delay
+- Chất lượng tín hiệu analog
+- Nhiễu điện và jitter hệ thống
 
----
-
-## 4. GIỚI HẠN LOẠI ĐẠN
-
-Hệ thống có thể cho kết quả khác nhau tùy:
-- cỡ đạn,
-- tốc độ đầu đạn,
-- đạn cận âm,
-- súng giảm thanh,
-- góc va chạm,
-- và đặc tính sóng xung kích.
-
-KHÔNG đảm bảo hoạt động giống nhau với mọi loại vũ khí và đạn.
+Sai lệch trong cấu hình timer hoặc đồng bộ thời gian có thể dẫn đến sai số lớn trong quá trình tính toán tọa độ.
 
 ---
 
-## 5. GIỚI HẠN BẮN LIÊN THANH
+5. GIỚI HẠN THEO LOẠI ĐẠN
 
-Nhiều phát bắn liên tiếp có thể:
-- chồng tín hiệu,
-- gây nhầm timestamp,
-- hoặc vượt khả năng xử lý của hệ thống.
+Kết quả định vị có thể thay đổi tùy theo:
 
-Độ tin cậy có thể giảm khi tốc độ bắn quá cao.
+- Cỡ đạn
+- Tốc độ đầu đạn
+- Đạn cận âm
+- Vũ khí có gắn giảm thanh
+- Góc va chạm
+- Khoảng cách bắn
+- Đặc tính sóng xung kích
+- Đặc tính vật liệu bia
 
----
-
-## 6. GIỚI HẠN TRIỂN KHAI
-
-Hệ thống giả định:
-- cảm biến được lắp đúng vị trí,
-- khoảng cách chuẩn,
-- cố định chắc chắn,
-- và đã hiệu chuẩn đầy đủ.
-
-Mọi thay đổi vị trí sensor đều yêu cầu hiệu chuẩn lại.
+Hệ thống không bảo đảm hoạt động đồng nhất với mọi loại vũ khí, loại đạn hoặc điều kiện bắn khác nhau.
 
 ---
 
-## 7. GIỚI HẠN THUẬT TOÁN
+6. GIỚI HẠN KHI BẮN LIÊN THANH
 
-Kết quả tọa độ được tính bằng:
-- thuật toán TDOA,
-- mô hình toán học Chan method,
-- và tối ưu phi tuyến (Levenberg-Marquardt).
+Trong điều kiện tốc độ bắn cao hoặc nhiều phát bắn liên tiếp:
 
-Trong điều kiện dữ liệu nhiễu hoặc bất thường:
-- thuật toán có thể không hội tụ,
-- cho ra tọa độ sai,
-- hoặc xuất hiện nghiệm không hợp lệ.
+- Tín hiệu có thể chồng lấp
+- Timestamp có thể bị nhầm lẫn
+- Bộ đệm DMA có thể quá tải
+- Hệ thống có thể phát sinh false trigger
+- Thuật toán có thể xử lý sai thứ tự va chạm
 
----
-
-## 8. GIỚI HẠN NGUỒN ĐIỆN
-
-Nguồn cấp không ổn định có thể gây:
-- reset MCU,
-- sai timestamp,
-- false trigger,
-- lỗi DMA,
-- hoặc hỏng phần cứng.
+Độ tin cậy của kết quả có thể giảm đáng kể khi vượt quá khả năng xử lý thiết kế của hệ thống.
 
 ---
 
-## 9. YÊU CẦU BẢO TRÌ
+7. GIỚI HẠN TRIỂN KHAI THỰC TẾ
 
-Hệ thống PHẢI được:
-- kiểm tra định kỳ,
-- hiệu chuẩn định kỳ,
-- kiểm tra sensor,
-- kiểm tra dây tín hiệu,
-- và xác minh firmware
-trước khi sử dụng thực tế.
+Hệ thống giả định rằng:
+
+- Cảm biến được lắp đúng vị trí
+- Khoảng cách giữa các sensor đúng cấu hình
+- Cảm biến được cố định chắc chắn
+- Hệ thống đã được hiệu chuẩn đầy đủ
+- Dây tín hiệu đạt yêu cầu kỹ thuật
+
+Mọi thay đổi liên quan đến:
+
+- Vị trí sensor
+- Cấu trúc bia
+- Sơ đồ kết nối
+- Kết cấu cơ khí
+- Hoặc cấu hình phần cứng
+
+đều yêu cầu hiệu chuẩn và kiểm thử lại trước khi vận hành thực tế.
 
 ---
 
-## 10. TRÁCH NHIỆM VẬN HÀNH
+8. GIỚI HẠN THUẬT TOÁN
 
-Trách nhiệm cuối cùng về an toàn luôn thuộc về:
-- người vận hành,
-- cán bộ phụ trách,
-- và sĩ quan thao trường.
+Hệ thống sử dụng:
+
+- Thuật toán TDOA
+- Mô hình Chan Method
+- Tối ưu phi tuyến Levenberg-Marquardt
+
+Trong điều kiện dữ liệu nhiễu, thiếu dữ liệu hoặc tín hiệu bất thường:
+
+- Thuật toán có thể không hội tụ
+- Có thể xuất hiện nghiệm sai
+- Có thể phát sinh nghiệm không hợp lệ
+- Hoặc hệ thống không thể xác định chính xác vị trí va chạm
+
+Kết quả tính toán phụ thuộc trực tiếp vào chất lượng dữ liệu đầu vào.
+
+---
+
+9. GIỚI HẠN NGUỒN ĐIỆN
+
+Nguồn cấp không ổn định có thể gây ra:
+
+- Reset MCU ngoài ý muốn
+- Sai lệch timestamp
+- False trigger
+- Lỗi DMA
+- Mất dữ liệu
+- Treo hệ thống
+- Hoặc hư hỏng phần cứng
+
+Hệ thống yêu cầu nguồn cấp ổn định và đạt tiêu chuẩn kỹ thuật trong suốt quá trình vận hành.
+
+---
+
+10. YÊU CẦU BẢO TRÌ
+
+Trước khi sử dụng thực tế, hệ thống phải được:
+
+- Kiểm tra định kỳ
+- Hiệu chuẩn định kỳ
+- Kiểm tra cảm biến
+- Kiểm tra dây tín hiệu
+- Kiểm tra nguồn cấp
+- Xác minh firmware
+- Kiểm tra đồng bộ timestamp
+- Và chạy thử nghiệm chức năng
+
+Mọi dấu hiệu bất thường phải được xử lý hoàn toàn trước khi tiếp tục vận hành.
+
+---
+
+11. GIỚI HẠN AN TOÀN VẬN HÀNH
 
 Hệ thống này chỉ là công cụ hỗ trợ kỹ thuật.
 
-KHÔNG phải hệ thống tự động tuyệt đối.
+Hệ thống không phải:
+
+- Thiết bị xác nhận an toàn tuyệt đối
+- Hệ thống điều khiển hỏa lực
+- Thiết bị thay thế sĩ quan thao trường
+- Hoặc hệ thống ra quyết định tự động
+
+Trách nhiệm cuối cùng về an toàn luôn thuộc về:
+
+- Người vận hành
+- Cán bộ kỹ thuật
+- Đơn vị triển khai
+- Và chỉ huy thao trường
 
 ---
 
-## LIÊN HỆ HỖ TRỢ
+12. BÁO CÁO SỰ CỐ VÀ HỖ TRỢ
 
-Nếu phát hiện lỗi, sai sót, hoặc có câu hỏi:
-- **Tác giả:** Chiêm Dũng (Dunghero1412)
-- **Repository:** https://github.com/Dunghero1412/HTTDTD_v3.1
-- **Issues:** https://github.com/Dunghero1412/HTTDTD_v3.1/issues
+Mọi lỗi, sai lệch hoặc sự cố phát hiện trong quá trình vận hành phải được báo cáo ngay lập tức trước khi tiếp tục sử dụng hệ thống.
 
-**GHI NHỚ:** Mọi vấn đề phải được báo cáo ngay trước khi tiếp tục vận hành.
+Thông tin liên hệ
+
+- Tác giả: Chiêm Dũng (Dunghero1412)
+- Repository: https://github.com/Dunghero1412/HTTDTD_v3.1
+- Issues: https://github.com/Dunghero1412/HTTDTD_v3.1/issues
+
+---
+
+GHI NHỚ QUAN TRỌNG
+
+Mọi hệ thống điện tử đều tồn tại khả năng phát sinh lỗi.
+
+Độ chính xác của hệ thống phụ thuộc trực tiếp vào:
+
+- Chất lượng triển khai
+- Điều kiện vận hành
+- Chất lượng hiệu chuẩn
+- Và sự tuân thủ quy trình kỹ thuật
+
+TUYỆT ĐỐI KHÔNG sử dụng hệ thống như nguồn xác nhận an toàn duy nhất trong thao trường bắn đạn thật.
+
+---
+
+Copyright © 2026 CHIÊM DŨNG
