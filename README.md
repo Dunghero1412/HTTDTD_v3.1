@@ -2,9 +2,9 @@
 
 <div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
-[![Platform](https://img.shields.io/badge/Platform-RPi5%20%7C%20RPi%20Zero%202W%20%7C%20STM32F407-red.svg)]()
+[![License: APACHE2.0](https://img.shields.io/badge/License-APACHE2.0-yellow.svg)](https://opensource.org/licenses/Apache2.0)
+[![Python](https://img.shields.io/badge/C++-pass-green.svg)](https://cpp.org)
+[![Platform](https://img.shields.io/badge/Platform-RPi5%20%7C%20RPi%20Zero%202W%20%7C%20STM32F407VET6-red.svg)]()
 
 **Phát triển bởi [Chiêm Dũng](https://github.com/Dunghero1412)**
 
