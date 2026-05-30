@@ -69,6 +69,7 @@ graph TB
 ---
 
 ## 2. Luồng Dữ Liệu Quá Trình Bắn (Firing Process)
+```
 
 ```mermaid
 sequenceDiagram
@@ -117,10 +118,12 @@ sequenceDiagram
     
     User->>UI: 3. Xem kết quả<br/>(x,y, điểm)
 ```
+```markdown
 
 ---
 
 ## 3. Kiến Trúc Firmware STM32F407
+```
 
 ```mermaid
 graph TB
