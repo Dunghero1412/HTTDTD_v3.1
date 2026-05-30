@@ -2,7 +2,7 @@
 # Hệ Thống HTTDTD v3.1 - Sơ Đồ Kiến Trúc (Mermaid)
 
 ## 1. Kiến Trúc Tổng Thể Hệ Thống
-
+```
 ```mermaid
 graph TB
     subgraph "Thao Trường (Physical)"
@@ -64,6 +64,7 @@ graph TB
     CONTROLLER -->|"Query Status"| NODEMAN
 
 ```
+```markdown
 
 ---
 
@@ -694,6 +695,8 @@ timeline
 ```
 
 ---
+```
+```markdown
 
 ## 📌 Chú Thích Ký Hiệu
 
