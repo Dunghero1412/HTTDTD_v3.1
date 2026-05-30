@@ -64,6 +64,7 @@ graph TB
     CONTROLLER -->|"Log Events"| DEBUGLOG
     CONTROLLER -->|"Query Status"| NODEMAN
 ```
+```
 
 ---
 
@@ -725,5 +726,4 @@ timeline
 **Cập nhật:** 26 Tháng 5 Năm 2026  
 **Phiên bản:** 1.0  
 **Tác giả:** Chiêm Dũng (Dunghero1412)
-```
 ```
