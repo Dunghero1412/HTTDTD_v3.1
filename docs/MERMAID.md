@@ -1,4 +1,3 @@
-
 ```markdown
 # Hệ Thống HTTDTD v3.1 - Sơ Đồ Kiến Trúc (Mermaid)
 
@@ -63,7 +62,7 @@ graph TB
     UI -->|"Display Results"| SCOREBOARD
     CONTROLLER -->|"Log Events"| DEBUGLOG
     CONTROLLER -->|"Query Status"| NODEMAN
-```
+
 ```
 
 ---
