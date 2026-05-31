@@ -1,6 +1,9 @@
 // ============================================================================
 // File: Core/Src/main.cpp
 // Mô tả: Hàm chính, khởi tạo phần cứng và vòng lặp chính.
+//        - SYSCLK: 168MHz (PLL từ HSE 8MHz)
+//        - APB1: 42MHz -> Timer Clock: 84MHz (TIM2, TIM5)
+//        - APB2: 84MHz -> Timer Clock: 168MHz (TIM1, TIM8)
 // ============================================================================
 
 // Quan trọng: Include theo thứ tự đúng
@@ -32,6 +35,7 @@ extern "C" {
     void MX_USART1_UART_Init(void);
     void MX_SPI2_Init(void);
     void MX_SPI3_Init(void);
+    void MX_TIM5_Init(void);  // Thêm TIM5 init
 }
 
 // ---------- Hỗ trợ printf qua UART1 ----------
@@ -58,6 +62,7 @@ int main(void) {
     MX_USART1_UART_Init();
     MX_SPI2_Init();
     MX_SPI3_Init();
+    MX_TIM5_Init();  // Khởi tạo TIM5 cho cảm biến E,F
     
     // Khởi tạo các module ứng dụng
     TDOAManager::init();
@@ -75,7 +80,8 @@ int main(void) {
     
     printf("TDOA System ready.\r\n");
     printf("MCU: STM32F407VET6 @ 168MHz\r\n");
-    printf("Timer resolution: ~11.9ns\r\n");
+    printf("TIM2 (A,B,C,D): 84MHz, ~11.9ns/tick\r\n");
+    printf("TIM5 (E,F): 84MHz, ~11.9ns/tick\r\n");
     
     // Vòng lặp chính
     while (1) {
@@ -89,25 +95,29 @@ int main(void) {
 
 /**
  * @brief  Cấu hình clock hệ thống
- * @note   HSE 8MHz -> PLL 168MHz, APB1 = 42MHz (Timer = 84MHz)
+ * @note   HSE 8MHz -> PLL 168MHz (SYSCLK)
+ *         APB1 = 42MHz (Prescaler = 4), Timer Clock = 84MHz
+ *         APB2 = 84MHz (Prescaler = 2), Timer Clock = 168MHz
+ *         FLASH latency = 5 wait states
  */
 void SystemClock_Config(void) {
-    RCC_OscInitTypeDef RCC_OscInitStruct;memset(&RCC_OscInitStruct, 0, sizeof(RCC_OscInitStruct));
+    RCC_OscInitTypeDef RCC_OscInitStruct;
+    memset(&RCC_OscInitStruct, 0, sizeof(RCC_OscInitStruct));
     RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
     
     // Bật Power Controller và cấu hình voltage scale
     __HAL_RCC_PWR_CLK_ENABLE();
     __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
     
-    // Cấu hình oscillator: HSE
+    // Cấu hình oscillator: HSE 8MHz
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
     RCC_OscInitStruct.HSEState = RCC_HSE_ON;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    RCC_OscInitStruct.PLL.PLLM = 8;
-    RCC_OscInitStruct.PLL.PLLN = 336;
-    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-    RCC_OscInitStruct.PLL.PLLQ = 7;
+    RCC_OscInitStruct.PLL.PLLM = 8;       // Chia HSE 8MHz cho 8 = 1MHz
+    RCC_OscInitStruct.PLL.PLLN = 336;     // Nhân lên 336MHz
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;  // Chia 336 cho 2 = 168MHz (SYSCLK)
+    RCC_OscInitStruct.PLL.PLLQ = 7;       // Chia cho 7 = 48MHz (USB)
     
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
         // Lỗi cấu hình oscillator - xử lý tùy ứng dụng
@@ -120,9 +130,9 @@ void SystemClock_Config(void) {
     RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK 
                                  | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
     RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;  // APB1 = 42MHz -> Timer = 84MHz
-    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;  // APB2 = 84MHz
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;      // HCLK = 168MHz
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;       // APB1 = 42MHz -> Timer = 84MHz
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;       // APB2 = 84MHz -> Timer = 168MHz
     
     if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK) {
         // Lỗi cấu hình clock
@@ -138,6 +148,8 @@ void MX_GPIO_Init(void) {
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
+    __HAL_RCC_GPIOH_CLK_ENABLE();  // Thêm để support TIM5 chân H
+    __HAL_RCC_GPIOI_CLK_ENABLE();  // Thêm nếu cần Port I
 }
 
 /**
@@ -210,6 +222,48 @@ void MX_SPI3_Init(void) {
     HAL_NVIC_SetPriority(SPI3_IRQn, 3, 0);
     HAL_NVIC_EnableIRQ(SPI3_IRQn);
 }
+
+/**
+ * @brief  Khởi tạo TIM5 (Input Capture - Sensor E,F) @ 84MHz
+ * @note   TIM5 clock: APB1 = 42MHz -> Timer clock = 84MHz (với prescaler divisor)
+ *         Configuration: 32-bit timer, PSC=0, Period=0xFFFFFFFF
+ */
+void MX_TIM5_Init(void) {
+    __HAL_RCC_TIM5_CLK_ENABLE();
+    
+    TIM_HandleTypeDef htim5 = {0};
+    htim5.Instance = TIM5;
+    htim5.Init.Prescaler = 0;               // Không chia, tần số timer = 84MHz
+    htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim5.Init.Period = 0xFFFFFFFF;         // 32-bit tự do, chỉ dùng tràn
+    htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    
+    if (HAL_TIM_IC_Init(&htim5) != HAL_OK) {
+        while (1) {}
+    }
+
+    // Cấu hình kênh capture (xung rising, không lọc)
+    TIM_IC_InitTypeDef icConfig = {0};
+    icConfig.ICPolarity = TIM_ICPOLARITY_RISING;
+    icConfig.ICSelection = TIM_ICSELECTION_DIRECTTI;
+    icConfig.ICPrescaler = TIM_ICPSC_DIV1;
+    icConfig.ICFilter = 0;
+    
+    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_1);  // Sensor E
+    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_2);  // Sensor F
+
+    // Bật ngắt tràn (update) và ngắt capture
+    HAL_NVIC_SetPriority(TIM5_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(TIM5_IRQn);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC1);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC2);
+
+    // Khởi động timer
+    HAL_TIM_Base_Start(&htim5);
+}
+
 #ifdef  USE_FULL_ASSERT
 extern "C" {
     void assert_failed(uint8_t *file, uint32_t line) {
