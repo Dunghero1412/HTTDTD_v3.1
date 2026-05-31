@@ -24,13 +24,17 @@
 #define HAL_FLASH_MODULE_ENABLED    1   // Thao tác Flash (cần cho clock)
 
 // Ngoại vi giao tiếp
+// TIM2: Timer input capture (cảm biến piezoelectric A,B,C,D)
+// TIM5: Timer input capture (cảm biến piezoelectric E,F)
+#define HAL_TIM_BASE_MODULE_ENABLED 1   // Timer base (cần cho input capture)
+#define HAL_TIM_IC_MODULE_ENABLED   1   // Input capture (cần cho TIM2, TIM5)
 #define HAL_TIM_MODULE_ENABLED      1   // Timer (TIM2 capture)
 #define HAL_SPI_MODULE_ENABLED      1   // SPI2 (BME280) + SPI3 (RPI)
 #define HAL_UART_MODULE_ENABLED     1   // USART1 debug
 #define HAL_EXTI_MODULE_ENABLED     1   // Ngắt ngoài (TC, RDC, RS, NSS)
 
 // Ngoại vi không dùng - tắt hết
-#define HAL_ADC_MODULE_ENABLED      0
+#define HAL_ADC_MODULE_ENABLED      0    // Không dùng ADC
 #define HAL_CAN_MODULE_ENABLED      0
 #define HAL_CAN_LEGACY_MODULE_ENABLED 0
 #define HAL_CRC_MODULE_ENABLED      0

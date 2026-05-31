@@ -50,7 +50,7 @@ std::vector<std::string> SPIMaster::readData(int timeoutMs) {
             if (!currentLine.empty()) {
                 lines.push_back(currentLine);
                 currentLine.clear();
-                if (lines.size() >= 5) break; // A,B,C,D,Temp (5 dòng)
+                if (lines.size() >= 7) break; // A,B,C,D,E,F,Temp (7 dòng)
             }
         } else if (rx != '\r' && rx != 0xFF) {
             currentLine += static_cast<char>(rx);

@@ -39,11 +39,13 @@ constexpr int MAX_CAPTURES = 3;
 struct SensorPos {
     double x, y;
 };
-const SensorPos SENSORS[4] = {
+const SensorPos SENSORS[6] = {
     {-50, -50}, // A (kênh 0)
     {-50,  50}, // B (kênh 1)
     { 50,  50}, // C (kênh 2)
-    { 50, -50}  // D (kênh 3)
+    { 50, -50}, // D (kênh 3)
+    {-50,   0}, // E (kênh 4)
+    {  0, -50}  // F (kênh 5)
 };
 
 // ---------- Thông tin node ----------

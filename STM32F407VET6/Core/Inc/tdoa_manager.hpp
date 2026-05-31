@@ -27,6 +27,8 @@ public:
     static void onCaptureCH2(uint32_t capture_val);
     static void onCaptureCH3(uint32_t capture_val);
     static void onCaptureCH4(uint32_t capture_val);
+    static void onCaptureCH5(uint32_t capture_val);
+    static void onCaptureCH6(uint32_t capture_val);
     static void onOverflow();
 
     // Timestamp 64-bit hiện tại (dùng cho debug/nhiệt độ)
@@ -44,8 +46,8 @@ private:
     static void resetSystem();
 
     static State currentState;
-    static CaptureData captures[4];
-    static bool channelCaptured[4];
+    static CaptureData captures[6]; // 4 channels for TIM2 + 2 channels for TIM5
+    static bool channelCaptured[6];
     static uint32_t successCount;
 
     static uint32_t delayStartTick;

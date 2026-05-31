@@ -12,11 +12,13 @@ volatile uint32_t overflow_count = 0;   // Đếm số lần tràn TIM2
 
 // Handle của TIM2 (dùng trong nội bộ file)
 static TIM_HandleTypeDef htim2;
+// Handle của TIM5 (dùng trong nội bộ file)
+static TIM_HandleTypeDef htim5;
 
 // ---------- Các biến trạng thái tĩnh ----------
 TDOAManager::State TDOAManager::currentState = TDOAManager::IDLE;
-TDOAManager::CaptureData TDOAManager::captures[4];
-bool TDOAManager::channelCaptured[4] = {false, false, false, false};
+TDOAManager::CaptureData TDOAManager::captures[6];
+bool TDOAManager::channelCaptured[6] = {false, false, false, false, false, false};
 uint32_t TDOAManager::successCount = 0;
 uint32_t TDOAManager::delayStartTick = 0;
 bool TDOAManager::delayActive = false;
@@ -30,26 +32,32 @@ static volatile bool rsFlag = false;
 
 // ---------- Các hàm nội bộ ----------
 
-// Bắt đầu capture: bật ngắt capture cho cả 4 kênh
+// Bắt đầu capture: bật ngắt capture cho cả 6 kênh (A,B,C,D TIM2, E,F TIM5)
 static void enableCaptureChannels() {
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_CC1);
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_CC2);
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_CC3);
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_CC4);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC5);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC6);
 }
 
-// Tắt ngắt capture của cả 4 kênh
+// Tắt ngắt capture của cả 6 kênh
 static void disableCaptureChannels() {
     __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC1);
     __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC2);
     __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC3);
     __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC4);
+    __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC5);
+    __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC6);
 }
 
 // ---------- Triển khai các phương thức public ----------
 
 void TDOAManager::init() {
-    // 1. Cấu hình TIM2 cho input capture, độ phân giải ~11.9 ns (84 MHz, PSC=0)
+    // 1. Cấu hình TIM2 và TIM5 cho input capture, độ phân giải ~11.9 ns (84 MHz, PSC=0)
+
+    // Cấu hình TIM2 cho input capture
     __HAL_RCC_TIM2_CLK_ENABLE();
     htim2.Instance = TIM2;
     htim2.Init.Prescaler = 0;               // Không chia, tần số timer = 84 MHz
@@ -58,6 +66,16 @@ void TDOAManager::init() {
     htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     HAL_TIM_IC_Init(&htim2);
+    
+    // Cấu hình TIM5 cho input capture
+    __HAL_RCC_TIM5_CLK_ENABLE();
+    htim5.Instance = TIM5;
+    htim5.Init.Prescaler = 0;               // Không chia, tần số timer = 84 MHz
+    htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+    htim5.Init.Period = 0xFFFFFFFF;         // 32-bit tự do, chỉ dùng tràn
+    htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+    htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+    HAL_TIM_IC_Init(&htim5);
 
     // Cấu hình kênh capture (xung rising, không lọc)
     TIM_IC_InitTypeDef icConfig = {0};
@@ -69,14 +87,22 @@ void TDOAManager::init() {
     HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_2);
     HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_3);
     HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_4);
+    
+    // Cấu hình kênh capture cho TIM5
+    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_5);
+    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_6);
 
     // Bật ngắt tràn (update) và đặt độ ưu tiên thấp hơn ngắt capture
     HAL_NVIC_SetPriority(TIM2_IRQn, 1, 0);
     HAL_NVIC_EnableIRQ(TIM2_IRQn);
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_UPDATE);
+    HAL_NVIC_SetPriority(TIM5_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(TIM5_IRQn);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
 
     // Khởi động timer
     HAL_TIM_Base_Start(&htim2);
+    HAL_TIM_Base_Start(&htim5);
 
     // 2. Cấu hình các chân điều khiển
     GPIO_InitTypeDef gpio = {0};
@@ -122,6 +148,8 @@ void TDOAManager::init() {
     overflow_count = 0;
     __HAL_TIM_SET_COUNTER(&htim2, 0);
     for (int i = 0; i < 4; ++i) channelCaptured[i] = false;
+    __HAL_TIM_SET_COUNTER(&htim5, 0);
+    // vì TIM2 và TIM5 cùng source clock là 84MHz, nên khi set counter về 0, thì overflow_count cũng về 0
 }
 
 void TDOAManager::processEvents() {
@@ -261,6 +289,28 @@ void TDOAManager::onCaptureCH4(uint32_t val) {
     }
 }
 
+void TDOAManager::onCaptureCH5(uint32_t val) {
+    if (currentState == CAPTURING && !channelCaptured[4]) {
+        uint32_t ov = overflow_count;
+        if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_UPDATE)) ov++;
+        captures[4].overflow = ov;
+        captures[4].tick = val;
+        channelCaptured[4] = true;
+        __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC5);
+    }
+}
+
+void TDOAManager::onCaptureCH6(uint32_t val) {
+    if (currentState == CAPTURING && !channelCaptured[5]) {
+        uint32_t ov = overflow_count;
+        if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_UPDATE)) ov++;
+        captures[5].overflow = ov;
+        captures[5].tick = val;
+        channelCaptured[5] = true;
+        __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC6);
+    }
+}
+
 void TDOAManager::onOverflow() {
     overflow_count++;
 }
@@ -282,16 +332,20 @@ void TDOAManager::packDataForSPI() {
         "A , 0x%08lX, 0x%08lX\r\n"
         "B , 0x%08lX, 0x%08lX\r\n"
         "C , 0x%08lX, 0x%08lX\r\n"
-        "D , 0x%08lX, 0x%08lX\r\n",
+        "D , 0x%08lX, 0x%08lX\r\n"
+        "E , 0x%081X, 0x%081X\r\n"
+        "F , 0x%081X, 0x%081X\r\n",
         captures[0].overflow, captures[0].tick,
         captures[1].overflow, captures[1].tick,
         captures[2].overflow, captures[2].tick,
-        captures[3].overflow, captures[3].tick);
+        captures[3].overflow, captures[3].tick,
+        captures[4].overflow, captures[4].tick,
+        captures[5].overflow, captures[5].tick);
 }
 
 void TDOAManager::startCaptureSequence() {
     // Xóa cờ đã capture
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         channelCaptured[i] = false;
         captures[i].overflow = 0;
         captures[i].tick = 0;
@@ -302,7 +356,7 @@ void TDOAManager::startCaptureSequence() {
 
 void TDOAManager::stopCaptureAndClear() {
     disableCaptureChannels();            // Tắt ngắt capture
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         channelCaptured[i] = false;
     }
 }
@@ -310,7 +364,7 @@ void TDOAManager::stopCaptureAndClear() {
 void TDOAManager::resetSystem() {
     // Tắt mọi capture, xóa dữ liệu, đưa về IDLE
     disableCaptureChannels();
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         channelCaptured[i] = false;
         captures[i].overflow = 0;
         captures[i].tick = 0;
@@ -330,7 +384,7 @@ void TDOAManager::resetSystem() {
 // CÁC TRÌNH PHỤC VỤ NGẮT (ISR)
 // ============================================================================
 
-// Ngắt TIM2: xử lý capture và overflow
+// Ngắt TIM2 : xử lý capture và overflow
 extern "C" void TIM2_IRQHandler(void) {
     // Capture kênh 1
     if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_CC1) != RESET) {
@@ -359,6 +413,39 @@ extern "C" void TIM2_IRQHandler(void) {
     // Tràn update
     if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE) != RESET) {
         __HAL_TIM_CLEAR_FLAG(&htim2, TIM_FLAG_UPDATE);
+        TDOAManager::onOverflow();
+    }
+}
+
+// ngắt TIM5 : xử lý capture và overflow
+extern "C" void TIM5_IRQHandler(void) {
+    // Capture kênh 1
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC1) != RESET) {
+        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC5);
+        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_1);
+        TDOAManager::onCaptureCH1(cap);
+    }
+    // Capture kênh 2
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC2) != RESET) {
+        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC6);
+        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_2);
+        TDOAManager::onCaptureCH2(cap);
+    }
+    // Capture kênh 3
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC3) != RESET) {
+        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC3);
+        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_3);
+        TDOAManager::onCaptureCH3(cap);
+    }
+    // Capture kênh 4
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC4) != RESET) {
+        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC4);
+        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_4);
+        TDOAManager::onCaptureCH4(cap);
+    }
+    // Tràn update
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_UPDATE) != RESET) {
+        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_UPDATE);
         TDOAManager::onOverflow();
     }
 }

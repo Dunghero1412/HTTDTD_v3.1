@@ -12,13 +12,13 @@ extern "C" {
 #include "stm32f4xx_hal.h"
 
 // ---------- TIM2 input capture (cảm biến piezoelectric A,B,C,D) @ 84MHz ----------
-#define TIM2_CH1_PIN        GPIO_PIN_0
+#define TIM2_CH1_PIN        GPIO_PIN_0 // Sensor A
 #define TIM2_CH1_PORT       GPIOA
-#define TIM2_CH2_PIN        GPIO_PIN_1
+#define TIM2_CH2_PIN        GPIO_PIN_1 // Sensor B
 #define TIM2_CH2_PORT       GPIOA
-#define TIM2_CH3_PIN        GPIO_PIN_2
+#define TIM2_CH3_PIN        GPIO_PIN_2 // Sensor C
 #define TIM2_CH3_PORT       GPIOA
-#define TIM2_CH4_PIN        GPIO_PIN_3
+#define TIM2_CH4_PIN        GPIO_PIN_3 // Sensor D
 #define TIM2_CH4_PORT       GPIOA
 
 // ---------- TIM5 input capture (cảm biến piezoelectric E,F) @ 84MHz ----------
@@ -39,23 +39,23 @@ extern "C" {
 // Lưu ý: AF_TIM5_CH1 = PH10, AF_TIM5_CH2 = PH11 (AF2)
 
 // ---------- SPI2 – BME280 (master) ----------
-#define BME_CS_PIN          GPIO_PIN_12
+#define BME_CS_PIN          GPIO_PIN_12 // PB12
 #define BME_CS_PORT         GPIOB
-#define BME_SCK_PIN         GPIO_PIN_13
+#define BME_SCK_PIN         GPIO_PIN_13 // PB13
 #define BME_SCK_PORT        GPIOB
-#define BME_MISO_PIN        GPIO_PIN_14
+#define BME_MISO_PIN        GPIO_PIN_14 // PB14
 #define BME_MISO_PORT       GPIOB
-#define BME_MOSI_PIN        GPIO_PIN_15
+#define BME_MOSI_PIN        GPIO_PIN_15 // PB15
 #define BME_MOSI_PORT       GPIOB
 
 // ---------- SPI3 – Giao tiếp với Raspberry Pi (slave) ----------
-#define SPI3_NSS_PIN        GPIO_PIN_15
+#define SPI3_NSS_PIN        GPIO_PIN_15 // PA15
 #define SPI3_NSS_PORT       GPIOA
-#define SPI3_SCK_PIN        GPIO_PIN_10
+#define SPI3_SCK_PIN        GPIO_PIN_10 // PC10
 #define SPI3_SCK_PORT       GPIOC
-#define SPI3_MISO_PIN       GPIO_PIN_11
+#define SPI3_MISO_PIN       GPIO_PIN_11 // PC11
 #define SPI3_MISO_PORT      GPIOC
-#define SPI3_MOSI_PIN       GPIO_PIN_12
+#define SPI3_MOSI_PIN       GPIO_PIN_12 // PC12
 #define SPI3_MOSI_PORT      GPIOC
 
 // ---------- Các chân điều khiển ----------
@@ -92,7 +92,9 @@ extern "C" {
 extern volatile uint32_t overflow_count;
 
 // Biến đếm tràn TIM5 (toàn cục, sử dụng để mở rộng timestamp lên 64-bit)
-extern volatile uint32_t overflow_count_tim5;
+// extern volatile uint32_t overflow_count_tim5;
+// vì TIM2 và TIM5 cùng source clock là APB1 (84MHz) nên overflow_count_tim5 không cần thiết
+// có thể thêm nếu muốn sử dụng TIM5 cho mục đích khác
 
 #ifdef __cplusplus
 }

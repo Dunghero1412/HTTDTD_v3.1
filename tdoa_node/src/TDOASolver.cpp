@@ -49,6 +49,8 @@ struct TDOAFunctor {
         double dB = sqrt(pow(x - sensors[1].x, 2) + pow(y - sensors[1].y, 2));
         double dC = sqrt(pow(x - sensors[2].x, 2) + pow(y - sensors[2].y, 2));
         double dD = sqrt(pow(x - sensors[3].x, 2) + pow(y - sensors[3].y, 2));
+        double dE = sqrt(pow(x - sensors[4].x, 2) + pow(y - sensors[4].y, 2));
+        double dF = sqrt(pow(x - sensors[5].x, 2) + pow(y - sensors[5].y, 2));
 
         // DEBUG: In ra khoảng cách (có thể bỏ comment để xem)
         // std::cout << "dA=" << dA << " dB=" << dB << " dC=" << dC << " dD=" << dD << std::endl;
@@ -58,6 +60,8 @@ struct TDOAFunctor {
         fvec(0) = (dB - dA) / v - tdoa[0];  // TDOA B vs A
         fvec(1) = (dC - dA) / v - tdoa[1];  // TDOA C vs A
         fvec(2) = (dD - dA) / v - tdoa[2];  // TDOA D vs A
+        fvec(3) = (dE - dA) / v - tdoa[3];  // TDOA E vs A
+        fvec(4) = (dF - dA) / v - tdoa[4];  // TDOA F vs A
 
         // DEBUG: In ra sai số
         // std::cout << "residual: " << fvec.transpose() << std::endl;
@@ -83,9 +87,11 @@ struct TDOAFunctor {
         double dB = sqrt(pow(x - sensors[1].x, 2) + pow(y - sensors[1].y, 2));
         double dC = sqrt(pow(x - sensors[2].x, 2) + pow(y - sensors[2].y, 2));
         double dD = sqrt(pow(x - sensors[3].x, 2) + pow(y - sensors[3].y, 2));
+        double dE = sqrt(pow(x - sensors[4].x, 2) + pow(y - sensors[4].y, 2));
+        double dF = sqrt(pow(x - sensors[5].x, 2) + pow(y - sensors[5].y, 2));
 
         // Tránh chia cho 0
-        if (dA < 1e-6 || dB < 1e-6 || dC < 1e-6 || dD < 1e-6) {
+        if (dA < 1e-6 || dB < 1e-6 || dC < 1e-6 || dD < 1e-6 || dE < 1e-6 || dF < 1e-6) {
             fjac.setZero();
             return 1; // Error flag
         }
@@ -105,6 +111,14 @@ struct TDOAFunctor {
         // Row 2: TDOA D vs A
         fjac(2, 0) = ((x - sensors[3].x) / dD - (x - sensors[0].x) / dA) / v;
         fjac(2, 1) = ((y - sensors[3].y) / dD - (y - sensors[0].y) / dA) / v;
+        
+        // Row 3: TDOA E vs A
+        fjac(3, 0) = ((x - sensors[4].x) / dE - (x - sensors[0].x) / dA) / v;
+        fjac(3, 1) = ((y - sensors[4].y) / dE - (y - sensors[0].y) / dA) / v;
+        
+        // Row 4: TDOA F vs A
+        fjac(4, 0) = ((x - sensors[5].x) / dF - (x - sensors[0].x) / dA) / v;
+        fjac(4, 1) = ((y - sensors[5].y) / dF - (y - sensors[0].y) / dA) / v;
 
         // DEBUG: In ra Jacobian
         // std::cout << "Jacobian:\n" << fjac << std::endl;
@@ -114,10 +128,10 @@ struct TDOAFunctor {
 };
 
 // ============================================================================
-// Hàm chính: Tính toán vị trí (x,y) từ timestamp 4 cảm biến
+// Hàm chính: Tính toán vị trí (x,y) từ timestamp 6 cảm biến
 // ============================================================================
 std::pair<double, double> TDOASolver::computePosition(
-    const uint64_t timestamps[4], double temperature) {
+    const uint64_t timestamps[6], double temperature) {
     
     // ========================================================================
     // BƯỚC 1: Tính tốc độ âm thanh dựa trên nhiệt độ
@@ -135,10 +149,10 @@ std::pair<double, double> TDOASolver::computePosition(
     // 1 tick = 1/168MHz = 5.95 nanoseconds
     // Chuyển tick thành giây: timestamp_sec = timestamp_tick / 168e6
     
-    double tdoa[3];
+    double tdoa[5];
     double tA = timestamps[0] / 168e6;    // ← FIX: Đổi từ 84e6 → 168e6 (đúng frequency)
     
-    for (int i = 1; i < 4; ++i) {
+    for (int i = 1; i < 6; ++i) {
         double t_i = timestamps[i] / 168e6;
         tdoa[i - 1] = t_i - tA;
     }
@@ -159,10 +173,10 @@ std::pair<double, double> TDOASolver::computePosition(
     // Phương trình tuyến tính:
     // 2*(x_i - x_A)*x + 2*(y_i - y_A)*y = x_i^2 + y_i^2 - x_A^2 - y_A^2 - v^2*tdoa[i]^2
     
-    Matrix2d A_chan;
-    Vector2d b_chan;
+    MatrixXd A_chan(4, 2);
+    VectorXd b_chan(4);
     
-    for (int i = 0; i < 2; ++i) {  // ← Chỉ dùng 2 cảm biến (B, C) để tạo 2x2 system
+    for (int i = 0; i < 4; ++i) {  // ← Chỉ dùng 4 cảm biến (B, C, D, E) để tạo 4x2 system
         double xi = SENSORS[i + 1].x, yi = SENSORS[i + 1].y;
         double x1 = SENSORS[0].x, y1 = SENSORS[0].y;
         double Ki = xi * xi + yi * yi;
@@ -171,6 +185,7 @@ std::pair<double, double> TDOASolver::computePosition(
         // Matrix A: [2(x_i - x_A)   2(y_i - y_A)]
         A_chan(i, 0) = 2 * (xi - x1);
         A_chan(i, 1) = 2 * (yi - y1);
+        
         
         // Vector b: x_i^2 + y_i^2 - x_A^2 - y_A^2 - v^2*tdoa[i]^2
         // ← FIX: Công thức Chan đúng (không có thừa số v^2*tdoa^2 ở đây)
