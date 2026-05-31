@@ -1,8 +1,7 @@
-```markdown
 # Hệ Thống HTTDTD v3.1 - Sơ Đồ Kiến Trúc (Mermaid)
 
 ## 1. Kiến Trúc Tổng Thể Hệ Thống
-```
+
 ```mermaid
 graph TB
     subgraph "Thao Trường (Physical)"
@@ -62,14 +61,11 @@ graph TB
     UI -->|"Display Results"| SCOREBOARD
     CONTROLLER -->|"Log Events"| DEBUGLOG
     CONTROLLER -->|"Query Status"| NODEMAN
-
 ```
-```markdown
 
 ---
 
 ## 2. Luồng Dữ Liệu Quá Trình Bắn (Firing Process)
-```
 
 ```mermaid
 sequenceDiagram
@@ -118,12 +114,10 @@ sequenceDiagram
     
     User->>UI: 3. Xem kết quả<br/>(x,y, điểm)
 ```
-```markdown
 
 ---
 
 ## 3. Kiến Trúc Firmware STM32F407
-```
 
 ```mermaid
 graph TB
@@ -698,8 +692,6 @@ timeline
 ```
 
 ---
-```
-```markdown
 
 ## 📌 Chú Thích Ký Hiệu
 
@@ -731,4 +723,3 @@ timeline
 **Cập nhật:** 26 Tháng 5 Năm 2026  
 **Phiên bản:** 1.0  
 **Tác giả:** Chiêm Dũng (Dunghero1412)
-```
