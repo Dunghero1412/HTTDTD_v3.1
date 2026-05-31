@@ -1,6 +1,8 @@
 // ============================================================================
-// File: system.hpp
+// File: system.h
 // Mô tả: Định nghĩa các chân, hằng số và khai báo biến toàn cục dùng chung.
+//        Hỗ trợ TIM2 (4 cảm biến A,B,C,D) + TIM5 (2 cảm biến E,F)
+//        Clock: SYSCLK=168MHz, APB1=42MHz->TIM=84MHz, APB2=84MHz->TIM=168MHz
 // ============================================================================
 #pragma once
 #ifdef __cplusplus
@@ -9,7 +11,7 @@ extern "C" {
 
 #include "stm32f4xx_hal.h"
 
-// ---------- TIM2 input capture (cảm biến piezoelectric) ----------
+// ---------- TIM2 input capture (cảm biến piezoelectric A,B,C,D) @ 84MHz ----------
 #define TIM2_CH1_PIN        GPIO_PIN_0
 #define TIM2_CH1_PORT       GPIOA
 #define TIM2_CH2_PIN        GPIO_PIN_1
@@ -18,6 +20,23 @@ extern "C" {
 #define TIM2_CH3_PORT       GPIOA
 #define TIM2_CH4_PIN        GPIO_PIN_3
 #define TIM2_CH4_PORT       GPIOA
+
+// ---------- TIM5 input capture (cảm biến piezoelectric E,F) @ 84MHz ----------
+// *** CHÂN CỦA TIM5 TRÊN STM32F407VET6 ***
+// Tuỳ chọn 1: Sử dụng Port H (khuyến cáo - tránh xung đột)
+#define TIM5_CH1_PIN        GPIO_PIN_10    // Sensor E
+#define TIM5_CH1_PORT       GPIOH
+#define TIM5_CH2_PIN        GPIO_PIN_11    // Sensor F
+#define TIM5_CH2_PORT       GPIOH
+
+// Tuỳ chọn 2: Nếu không có Port H trên PCB, sử dụng Port I (AF_TIM5)
+// #define TIM5_CH1_PIN        GPIO_PIN_0     // Sensor E
+// #define TIM5_CH1_PORT       GPIOI
+// #define TIM5_CH2_PIN        GPIO_PIN_1     // Sensor F
+// #define TIM5_CH2_PORT       GPIOI
+
+// Tuỳ chọn 3: Nếu chỉ có Port A,B,C, sử dụng PH10 trên Port H (cần kiểm tra PCB)
+// Lưu ý: AF_TIM5_CH1 = PH10, AF_TIM5_CH2 = PH11 (AF2)
 
 // ---------- SPI2 – BME280 (master) ----------
 #define BME_CS_PIN          GPIO_PIN_12
@@ -59,8 +78,21 @@ extern "C" {
 #define MAX_SUCCESS_COUNT       3           // Số lần truyền thành công tối đa rồi dừng
 #define TEMP_UPDATE_INTERVAL_MS 30000       // Định kỳ gửi nhiệt độ (30 giây)
 
+// ---------- Clock configuration & Timer resolution ----------
+// SYSCLK = 168MHz (HSE 8MHz -> PLL M=8, N=336, P=2)
+// APB1 = 42MHz (DIV4), Timer Clock APB1 = 84MHz (×2 vì DIV > 1)
+// APB2 = 84MHz (DIV2), Timer Clock APB2 = 168MHz (×2 vì DIV > 1)
+// => TIM2, TIM5 ở APB1 -> 84MHz
+// => Resolution: 1 / 84MHz ≈ 11.9 ns
+#define TIMER_CLOCK_HZ      84000000U      // TIM2, TIM5 clock frequency (Hz)
+#define TIMER_RESOLUTION_NS 12             // ~11.9ns (1/84MHz)
+
+// ---------- Biến toàn cục overflow counters ----------
 // Biến đếm tràn TIM2 (toàn cục, sử dụng để mở rộng timestamp lên 64-bit)
 extern volatile uint32_t overflow_count;
+
+// Biến đếm tràn TIM5 (toàn cục, sử dụng để mở rộng timestamp lên 64-bit)
+extern volatile uint32_t overflow_count_tim5;
 
 #ifdef __cplusplus
 }
