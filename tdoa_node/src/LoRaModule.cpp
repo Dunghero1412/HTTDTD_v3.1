@@ -1,16 +1,17 @@
 // ============================================================================
 // File: LoRaModule.cpp
 // ============================================================================
-#include "LoRaModule.hpp"
-#include <fcntl.h>
-#include <unistd.h>
-#include <termios.h>
-#include <cstring>
-#include <iostream>
-#include <sstream>
+#include "LoRaModule.hpp" // class của LoRaModule , định nghĩa các hàm thành viên
+#include <fcntl.h> // open
+#include <unistd.h> // các hàm read, write, usleep cơ bản
+#include <termios.h> // cấu hình cổng UART
+#include <cstring> // memset
+#include <iostream> // cout, cerr
+#include <sstream> // stringstream
 #include <thread>
 #include <chrono>
 
+// khởi tạo UART cho LoRa module, cấu hình các tham số như SF, tần số, và chuẩn bị nhận dữ liệu
 bool LoRaModule::init(const std::string& uartDev, int baud, int sf, int freqMHz) {
     this->sf = sf;
     this->freq = freqMHz;
@@ -29,7 +30,7 @@ bool LoRaModule::init(const std::string& uartDev, int baud, int sf, int freqMHz)
     tcflush(uart_fd, TCIFLUSH);
     tcsetattr(uart_fd, TCSANOW, &tty);
 
-    // Cấu hình LoRa AT
+    // Cấu hình LoRa AT commands
     std::string cmd;
     cmd = "AT+RESET\r\n"; write(uart_fd, cmd.c_str(), cmd.size());
     usleep(500000);
@@ -45,6 +46,7 @@ bool LoRaModule::init(const std::string& uartDev, int baud, int sf, int freqMHz)
     return true;
 }
 
+// hàm gửi dữ liệu qua LoRa module bằng cách sử dụng AT command, định dạng dữ liệu theo yêu cầu của module  
 bool LoRaModule::send(const std::string& data) {
     std::string cmd = "AT+SEND=0," + std::to_string(data.size()) + "," + data + "\r\n";
     write(uart_fd, cmd.c_str(), cmd.size());
@@ -53,10 +55,12 @@ bool LoRaModule::send(const std::string& data) {
     return true;
 }
 
+// hàm này cho phép đăng ký một callback để xử lý dữ liệu nhận được từ LoRa module, callback sẽ được gọi mỗi khi có dữ liệu mới đến
 void LoRaModule::setReceiveCallback(std::function<void(const std::string&)> cb) {
     recvCallback = cb;
 }
 
+// hàm này liên tục đọc dữ liệu từ UART, khi nhận được một dòng dữ liệu hoàn chỉnh (kết thúc bằng '\n'), nó sẽ gọi hàm parseLine để xử lý dữ liệu đó
 void LoRaModule::process() {
     char c;
     while (read(uart_fd, &c, 1) > 0) {
@@ -89,6 +93,7 @@ std::string LoRaModule::connectionInfo() const {
     return "SF" + std::to_string(sf) + "-" + std::to_string(freq);
 }
 
+// hàm này trả về phần trăm pin còn lại của LoRa module, có thể được sử dụng để giám sát tình trạng pin và đưa ra cảnh báo nếu cần thiết    
 int LoRaModule::batteryPercent() const {
     // TODO: đọc ADC hoặc giả lập
     return 85;
