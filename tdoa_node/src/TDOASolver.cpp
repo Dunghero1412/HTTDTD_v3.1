@@ -145,27 +145,33 @@ std::pair<double, double> TDOASolver::computePosition(
     // ========================================================================
     // BƯỚC 2: Tính TDOA (Time Difference of Arrival) so với cảm biến A
     // ========================================================================
-    // STM32F407: Timer chạy ở 168MHz (full system clock)
-    // 1 tick = 1/168MHz = 5.95 nanoseconds
-    // Chuyển tick thành giây: timestamp_sec = timestamp_tick / 168e6
+    // STM32F407VET6 clock configuration:
+    // - HCLK = 168MHz (SYSCLK)
+    // - APB1 = HCLK/4 = 42MHz, Timer Clock = 42MHz × 2 = 84MHz (when prescaler > 1)
+    // - TIM2, TIM5 ở APB1 với Prescaler=0 → không chia thêm → chạy ở 84MHz
+    // 
+    // Vậy: Timer Frequency = 84MHz (KHÔNG phải 168MHz)
+    // 1 tick = 1/84MHz ≈ 11.9 nanoseconds
+    // Chuyển tick thành giây: timestamp_sec = timestamp_tick / 84e6
     
     double tdoa[5];
-    double tA = timestamps[0] / 168e6;    // ← FIX: Đổi từ 84e6 → 168e6 (đúng frequency)
+    double tA = timestamps[0] / 84e6;     // ← Timer chạy 84MHz, chia cho 84e6 (CHÍNH XÁC)
     
     for (int i = 1; i < 6; ++i) {
-        double t_i = timestamps[i] / 168e6;
+        double t_i = timestamps[i] / 84e6;
         tdoa[i - 1] = t_i - tA;
     }
     
     // DEBUG: In ra TDOA
     // std::cout << "TDOA: " << tdoa[0] << "s, " << tdoa[1] << "s, " << tdoa[2] << "s" << std::endl;
-    // std::cout << "Timestamps (s): " << tA << ", " << (timestamps[1]/168e6) 
-    //           << ", " << (timestamps[2]/168e6) << ", " << (timestamps[3]/168e6) << std::endl;
+    // std::cout << "Timestamps (s): " << tA << ", " << (timestamps[1]/84e6) 
+    //           << ", " << (timestamps[2]/84e6) << ", " << (timestamps[3]/84e6) << std::endl;
 
     // ========================================================================
     // BƯỚC 3: Khởi tạo vị trí ban đầu bằng phương pháp Chan (Linear approximation)
     // ========================================================================
-    // Chan method: Giải hệ phương trình tuyến tính 2x2 từ 2 TDOA đầu tiên
+    // Chan method: Giải hệ phương trình tuyến tính từ 5 TDOA (6 sensors)
+    // Sử dụng least squares: A * x = b với A là 5x2 matrix (overdetermined)
     // 
     // Từ TDOA: (d_i - d_A)/v = tdoa[i]
     //          d_i - d_A = v * tdoa[i]
@@ -173,10 +179,10 @@ std::pair<double, double> TDOASolver::computePosition(
     // Phương trình tuyến tính:
     // 2*(x_i - x_A)*x + 2*(y_i - y_A)*y = x_i^2 + y_i^2 - x_A^2 - y_A^2 - v^2*tdoa[i]^2
     
-    MatrixXd A_chan(4, 2);
-    VectorXd b_chan(4);
+    MatrixXd A_chan(5, 2);
+    VectorXd b_chan(5);
     
-    for (int i = 0; i < 4; ++i) {  // ← Chỉ dùng 4 cảm biến (B, C, D, E) để tạo 4x2 system
+    for (int i = 0; i < 5; ++i) {  // ← Dùng hết 5 TDOA (B, C, D, E, F) để tạo 5x2 system
         double xi = SENSORS[i + 1].x, yi = SENSORS[i + 1].y;
         double x1 = SENSORS[0].x, y1 = SENSORS[0].y;
         double Ki = xi * xi + yi * yi;
@@ -188,14 +194,13 @@ std::pair<double, double> TDOASolver::computePosition(
         
         
         // Vector b: x_i^2 + y_i^2 - x_A^2 - y_A^2 - v^2*tdoa[i]^2
-        // ← FIX: Công thức Chan đúng (không có thừa số v^2*tdoa^2 ở đây)
         b_chan(i) = Ki - K1 - v * v * tdoa[i] * tdoa[i];
     }
     
     // DEBUG: In ra ma trận Chan
-    // std::cout << "Chan matrix A:\n" << A_chan << "\nChan vector b:\n" << b_chan.transpose() << std::endl;
+    // std::cout << "Chan matrix A (5x2):\n" << A_chan << "\nChan vector b:\n" << b_chan.transpose() << std::endl;
     
-    // Giải hệ tuyến tính A * x = b
+    // Giải hệ tuyến tính A * x = b bằng least squares
     Vector2d sol_chan = A_chan.colPivHouseholderQr().solve(b_chan);
     double x0 = sol_chan(0);
     double y0 = sol_chan(1);
@@ -223,19 +228,25 @@ std::pair<double, double> TDOASolver::computePosition(
     // Tạo đối tượng LM solver
     LevenbergMarquardt<TDOAFunctor> lm(functor);
     
-    // DEBUG: Có thể set các tham số LM (nếu cần)
-    // lm.parameters.ftol = 1e-6;
-    // lm.parameters.xtol = 1e-6;
-    // lm.parameters.gtol = 1e-6;
-    // lm.parameters.maxfev = 1000;
+    // Cấu hình LM cho tối ưu hóa đầy đủ (không cần tốc độ nhanh)
+    // Tăng độ chính xác convergence
+    lm.parameters.ftol = 1e-8;    // Function tolerance (residual norm)
+    lm.parameters.xtol = 1e-8;    // Parameter change tolerance
+    lm.parameters.gtol = 1e-8;    // Gradient tolerance
+    lm.parameters.maxfev = 5000;  // Max function evaluations (default ~200)
+    
+    // DEBUG: Có thể bật chi tiết tối ưu hóa
+    // std::cout << "LM optimization starting with initial guess: ("
+    //           << xy(0) << ", " << xy(1) << ")" << std::endl;
     
     // Chạy tối ưu hóa
     int ret = lm.minimize(xy);
     
     // DEBUG: In ra kết quả LM
     // std::cout << "LM optimization result code: " << ret << std::endl;
-    // std::cout << "LM iterations: " << lm.nfev << std::endl;
+    // std::cout << "LM iterations: " << lm.nfev << " (max: " << lm.parameters.maxfev << ")" << std::endl;
     // std::cout << "LM final residual norm: " << lm.fvec.norm() << std::endl;
+    // std::cout << "LM final position: (" << xy(0) << ", " << xy(1) << ")" << std::endl;
     
     // ========================================================================
     // BƯỚC 5: Return kết quả tối ưu
@@ -248,27 +259,38 @@ std::pair<double, double> TDOASolver::computePosition(
 // ============================================================================
 // DEBUG & NOTES:
 // ============================================================================
-// 1. Timer frequency: STM32F407 chạy ở 168MHz (NOT 84MHz)
-//    → 1 tick = 5.95 ns → timestamp / 168e6 = time in seconds
+// 1. Timer frequency: STM32F407VET6 TIM2, TIM5 chạy ở 84MHz (NOT 168MHz)
+//    Clock path: HCLK(168MHz) → APB1(42MHz) → Timer(84MHz when PSC>1, PSC=0)
+//    → 1 tick = 11.9 ns → timestamp / 84e6 = time in seconds
+//    ⚠️ COMMON MISTAKE: Using 168e6 instead of 84e6 causes 2x error in TDOA!
 //
-// 2. Chan method: Linear approximation để tìm initial guess
-//    → Dùng 2x2 system từ 2 TDOA đầu
-//    → Không có hệ số 2 ở v^2*tdoa[i] trong công thức
+// 2. Chan method: Linear approximation để tìm initial guess (phương pháp đầy đủ)
+//    → Dùng 5x2 least squares system từ HẾT 5 TDOA (6 sensors)
+//    → Giải bằng ColPivHouseholderQR (most robust)
+//    → Kết quả là tối ưu nhất cho bài toán tuyến tính
 //
-// 3. Levenberg-Marquardt: Non-linear optimization
+// 3. Levenberg-Marquardt: Non-linear optimization (tối ưu 2nd stage)
+//    → Sử dụng tất cả 5 TDOA equations (6 sensors)
 //    → Cần Jacobian analytical để tối ưu (không dùng numerical diff)
-//    → Hàm df() cung cấp Jacobian chính xác
+//    → Hàm df() cung cấp Jacobian chính xác 5x2 matrix
+//    → Tăng maxfev lên 5000 & tolerances xuống 1e-8 (độ chính xác cao)
 //
 // 4. TDOA functor:
-//    → operator(): compute residual
-//    → df(): compute Jacobian matrix (3x2)
+//    → operator(): compute 5-element residual vector
+//    → df(): compute 5x2 Jacobian matrix (5 equations, 2 unknowns)
 //
 // 5. Temperature compensation:
 //    → Công thức Cramer: v = 331.5 + 0.607*T (m/s)
 //    → Dữ liệu từ BME280 sensor
 //
-// 6. Sensor positions:
+// 6. Sensor positions (6 sensors):
 //    → Được define trong Config.hpp (SENSORS array)
 //    → Đơn vị: cm
 //    → Reference: Sensor A (index 0)
+//    → B, C, D, E, F: indexes 1-5
+//
+// 7. Phương pháp này "đầy đủ nhất" vì:
+//    → Chan: 5x2 least squares (not 4x2 or 2x2)
+//    → LM: uses all 6 sensors, not subsets
+//    → LM: tight tolerances & high max iterations (not speed-optimized)
 // ============================================================================

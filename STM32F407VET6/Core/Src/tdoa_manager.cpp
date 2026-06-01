@@ -211,9 +211,10 @@ void TDOAManager::processEvents() {
             stopCaptureAndClear();
             currentState = IDLE;
         }
-        // Kiểm tra đã capture đủ 4 kênh chưa
-        if (channelCaptured[0] && channelCaptured[1] && channelCaptured[2] && channelCaptured[3]) {
-            // Đủ 4 timestamp -> đóng gói và báo DATA_READY
+        // Kiểm tra đã capture đủ 6 kênh chưa
+        if (channelCaptured[0] && channelCaptured[1] && channelCaptured[2] && 
+            channelCaptured[3] && channelCaptured[4] && channelCaptured[5]) {
+            // Đủ 6 timestamp -> đóng gói và báo DATA_READY
             packDataForSPI();
             SPISlave::setTxData((const uint8_t*)spiTxBuffer, spiTxLen);
             HAL_GPIO_WritePin(DATA_READY_PORT, DATA_READY_PIN, GPIO_PIN_SET);
@@ -333,8 +334,8 @@ void TDOAManager::packDataForSPI() {
         "B , 0x%08lX, 0x%08lX\r\n"
         "C , 0x%08lX, 0x%08lX\r\n"
         "D , 0x%08lX, 0x%08lX\r\n"
-        "E , 0x%081X, 0x%081X\r\n"
-        "F , 0x%081X, 0x%081X\r\n",
+        "E , 0x%08lX, 0x%08lX\r\n"
+        "F , 0x%08lX, 0x%08lX\r\n",
         captures[0].overflow, captures[0].tick,
         captures[1].overflow, captures[1].tick,
         captures[2].overflow, captures[2].tick,
@@ -419,29 +420,17 @@ extern "C" void TIM2_IRQHandler(void) {
 
 // ngắt TIM5 : xử lý capture và overflow
 extern "C" void TIM5_IRQHandler(void) {
-    // Capture kênh 1
-    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC1) != RESET) {
+    // Capture kênh 5
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC5) != RESET) {
         __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC5);
-        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_1);
-        TDOAManager::onCaptureCH1(cap);
+        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_5);
+        TDOAManager::onCaptureCH5(cap);
     }
-    // Capture kênh 2
-    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC2) != RESET) {
+    // Capture kênh 6
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC6) != RESET) {
         __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC6);
-        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_2);
-        TDOAManager::onCaptureCH2(cap);
-    }
-    // Capture kênh 3
-    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC3) != RESET) {
-        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC3);
-        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_3);
-        TDOAManager::onCaptureCH3(cap);
-    }
-    // Capture kênh 4
-    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC4) != RESET) {
-        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC4);
-        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_4);
-        TDOAManager::onCaptureCH4(cap);
+        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_6);
+        TDOAManager::onCaptureCH6(cap);
     }
     // Tràn update
     if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_UPDATE) != RESET) {

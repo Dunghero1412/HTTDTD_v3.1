@@ -80,7 +80,7 @@ void NodeController::run() {
             int ld = lgGpioRead(gpioHandle, GPIO_LOAD_DATA);
             if (ld == 1) {
                 // STM32 báo sẵn sàng
-                uint64_t timestamps[4];
+                uint64_t timestamps[6];
                 float temp;
                 if (readTimestamps(timestamps, temp)) {
                     // Tính toán vị trí
@@ -227,11 +227,11 @@ void NodeController::hardResetSTM32() {
 }
 
 bool NodeController::readTimestamps(uint64_t* timestamps, float& temperature) {
-    // Đọc dữ liệu SPI, bao gồm 4 dòng timestamp và 1 dòng nhiệt độ
+    // Đọc dữ liệu SPI, bao gồm 6 dòng timestamp (A-F) và 1 dòng nhiệt độ
     auto lines = spi.readData(SPI_TIMEOUT);
-    if (lines.size() < 4) return false;
+    if (lines.size() < 6) return false;
     // Parse từng dòng
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
         // Định dạng: "A , 0xOVERFLOW, 0xTICK"
         std::istringstream iss(lines[i]);
         std::string ch, comma, ovStr, tickStr;
@@ -240,9 +240,9 @@ bool NodeController::readTimestamps(uint64_t* timestamps, float& temperature) {
         uint32_t tick = std::stoul(tickStr, nullptr, 16);
         timestamps[i] = ((uint64_t)ov << 32) | tick;
     }
-    // Nếu có dòng thứ 5 chứa nhiệt độ (tùy chọn)
-    if (lines.size() >= 5 && lines[4].size() > 2 && lines[4][0] == 'T') {
-        temperature = std::stof(lines[4].substr(2));
+    // Nếu có dòng thứ 7 chứa nhiệt độ (tùy chọn)
+    if (lines.size() >= 7 && lines[6].size() > 2 && lines[6][0] == 'T') {
+        temperature = std::stof(lines[6].substr(2));
     } else {
         // Nếu không, yêu cầu thêm qua SPI (lệnh 0x01) – cần STM32 hỗ trợ
         temperature = spi.requestTemperature(); // mặc định 25 nếu không có
