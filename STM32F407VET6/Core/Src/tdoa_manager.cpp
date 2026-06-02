@@ -2,10 +2,10 @@
 // File: tdoa_manager.cpp
 // Mô tả: Triển khai các phương thức của TDOAManager và các trình phục vụ ngắt.
 // ============================================================================
-#include "tdoa_manager.hpp"
-#include "system.h"
-#include <stdio.h>
-#include <string.h>
+#include "tdoa_manager.hpp" // Định nghĩa class TDOAManager và các hằng số
+#include "system.h"         // Hàm delay, cấu hình hệ thống
+#include <stdio.h>          // Hàm snprintf
+#include <string.h>         // Hàm memset
 
 // ---------- Biến toàn cục ----------
 volatile uint32_t overflow_count = 0;   // Đếm số lần tràn TIM2
@@ -16,19 +16,26 @@ static TIM_HandleTypeDef htim2;
 static TIM_HandleTypeDef htim5;
 
 // ---------- Các biến trạng thái tĩnh ----------
+// Trạng thái hiện tại của hệ thống
 TDOAManager::State TDOAManager::currentState = TDOAManager::IDLE;
+// Mảng lưu giá trị capture và overflow của 6 kênh
 TDOAManager::CaptureData TDOAManager::captures[6];
 bool TDOAManager::channelCaptured[6] = {false, false, false, false, false, false};
+// Đếm số lần đã capture thành công (được RPI đọc xong)
 uint32_t TDOAManager::successCount = 0;
+// Biến để quản lý delay 2 giây sau khi TC lên
 uint32_t TDOAManager::delayStartTick = 0;
+// Cờ báo đang trong thời gian delay 2 giây
 bool TDOAManager::delayActive = false;
+// Buffer và độ dài dữ liệu sẽ gửi qua SPI
 char TDOAManager::spiTxBuffer[256];
+// Độ dài dữ liệu đã đóng gói sẵn để gửi qua SPI
 uint16_t TDOAManager::spiTxLen = 0;
 
 // Cờ báo ngắt ngoài (được set trong ISR, xử lý trong processEvents)
-static volatile bool tcFlag = false;
-static volatile bool rdcFlag = false;
-static volatile bool rsFlag = false;
+static volatile bool tcFlag = false;   // Báo có cạnh lên TC
+static volatile bool rdcFlag = false;  // Báo RPI đã đọc xong (RDC)
+static volatile bool rsFlag = false;   // Báo yêu cầu reset (RS)
 
 // ---------- Các hàm nội bộ ----------
 

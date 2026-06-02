@@ -75,6 +75,7 @@ void LoRaModule::process() {
     }
 }
 
+// hàm phân tích một dòng dữ liệu nhận được từ LoRa module, nếu dòng đó chứa dữ liệu nhận dạng (bắt đầu bằng +RCV=), nó sẽ trích xuất phần dữ liệu và gọi callback đã đăng ký để xử lý dữ liệu đó   
 void LoRaModule::parseLine(const std::string& line) {
     // Tìm dữ liệu nhận dạng +RCV=<addr>,<len>,<data>
     size_t pos = line.find("+RCV=");

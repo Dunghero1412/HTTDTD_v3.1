@@ -3,13 +3,17 @@
 // Mô tả: Tính toán vị trí (x,y) từ timestamp của 4 sensor
 //        Sử dụng phương pháp Chan + Levenberg-Marquardt
 // ============================================================================
-#include "TDOASolver.hpp"
-#include "Config.hpp"
-#include <cmath>
+#include "TDOASolver.hpp" // Header chứa class TDOASolver và struct SensorPos
+#include "Config.hpp" // Header chứa cấu hình cảm biến (SENSORS array) và các hằng số khác
+#include <cmath> // Sử dụng math cho sqrt, pow, isnan
 #include <Eigen/Dense> // Sử dụng Eigen cho đại số tuyến tính và LM
-// Nếu không muốn dùng Eigen, bạn có thể tự viết, nhưng Eigen rất mạnh.
+// Nếu không muốn dùng Eigen, có thể tự viết, nhưng Eigen rất mạnh.
 // Cài: sudo apt install libeigen3-dev
-#include <iostream>
+#include <unsupported/Eigen/NonLinearOptimization> // Cho Levenberg-Marquardt
+#include <unsupported/Eigen/NumericalDiff> // Cho numerical differentiation (nếu cần)
+#include <limits> // Cho std::numeric_limits
+#include <iostream> // Cho debug (có thể bỏ sau khi hoàn thiện)
+// fvec và fjac là vector và ma trận dùng trong LM optimization được định nghĩa trong Eigen::LevenbergMarquardt 
 
 using namespace Eigen;
 
@@ -135,6 +139,7 @@ std::pair<double, double> TDOASolver::computePosition(
     
     // ========================================================================
     // BƯỚC 1: Tính tốc độ âm thanh dựa trên nhiệt độ
+    // công thức: v(T) = 331.5 + 0.607*T (m/s)
     // ========================================================================
     double v_ms = speedOfSound(temperature);           // m/s
     double v = v_ms * 100.0;                           // Chuyển sang cm/s
@@ -144,6 +149,7 @@ std::pair<double, double> TDOASolver::computePosition(
 
     // ========================================================================
     // BƯỚC 2: Tính TDOA (Time Difference of Arrival) so với cảm biến A
+    // công thức: tdoa[i] = (timestamp[i] - timestamp[0]) / timer_frequency
     // ========================================================================
     // STM32F407VET6 clock configuration:
     // - HCLK = 168MHz (SYSCLK)
@@ -169,6 +175,8 @@ std::pair<double, double> TDOASolver::computePosition(
 
     // ========================================================================
     // BƯỚC 3: Khởi tạo vị trí ban đầu bằng phương pháp Chan (Linear approximation)
+    // công thức: A * x = b với A là ma trận 5x2 (từ 5 TDOA) và b là vector 5x1
+    // Sử dụng tất cả 5 TDOA (B, C, D, E, F) để tạo hệ phương trình tuyến tính
     // ========================================================================
     // Chan method: Giải hệ phương trình tuyến tính từ 5 TDOA (6 sensors)
     // Sử dụng least squares: A * x = b với A là 5x2 matrix (overdetermined)
@@ -178,32 +186,35 @@ std::pair<double, double> TDOASolver::computePosition(
     //
     // Phương trình tuyến tính:
     // 2*(x_i - x_A)*x + 2*(y_i - y_A)*y = x_i^2 + y_i^2 - x_A^2 - y_A^2 - v^2*tdoa[i]^2
+    // Với i = 1..5 (B, C, D, E, F), A là ma trận 5x2, b là vector 5x1.
+    // Giải bằng least squares để tìm x0, y0 ban đầu cho LM optimization.
     
-    MatrixXd A_chan(5, 2);
-    VectorXd b_chan(5);
+    MatrixXd A_chan(5, 2); // Ma trận 5x2
+    VectorXd b_chan(5);    // Vector 5x1
     
     for (int i = 0; i < 5; ++i) {  // ← Dùng hết 5 TDOA (B, C, D, E, F) để tạo 5x2 system
-        double xi = SENSORS[i + 1].x, yi = SENSORS[i + 1].y;
-        double x1 = SENSORS[0].x, y1 = SENSORS[0].y;
-        double Ki = xi * xi + yi * yi;
-        double K1 = x1 * x1 + y1 * y1;
+        double xi = SENSORS[i + 1].x, yi = SENSORS[i + 1].y; // Sensor B, C, D, E, F (indexes 1-5)
+        double x1 = SENSORS[0].x, y1 = SENSORS[0].y;         // Sensor A (index 0)
+        double Ki = xi * xi + yi * yi;                       // Ki = x_i^2 + y_i^2
+        double K1 = x1 * x1 + y1 * y1;                       // K1 = x_A^2 + y_A^2 (A là sensor reference)
         
         // Matrix A: [2(x_i - x_A)   2(y_i - y_A)]
-        A_chan(i, 0) = 2 * (xi - x1);
-        A_chan(i, 1) = 2 * (yi - y1);
+        A_chan(i, 0) = 2 * (xi - x1); // dF_i/dx
+        A_chan(i, 1) = 2 * (yi - y1); // dF_i/dy
         
         
         // Vector b: x_i^2 + y_i^2 - x_A^2 - y_A^2 - v^2*tdoa[i]^2
-        b_chan(i) = Ki - K1 - v * v * tdoa[i] * tdoa[i];
+        b_chan(i) = Ki - K1 - v * v * tdoa[i] * tdoa[i]; // ← Dùng tdoa[i] từ 0..4 (B, C, D, E, F) để tạo 5 equations
     }
     
     // DEBUG: In ra ma trận Chan
     // std::cout << "Chan matrix A (5x2):\n" << A_chan << "\nChan vector b:\n" << b_chan.transpose() << std::endl;
     
     // Giải hệ tuyến tính A * x = b bằng least squares
-    Vector2d sol_chan = A_chan.colPivHouseholderQr().solve(b_chan);
-    double x0 = sol_chan(0);
-    double y0 = sol_chan(1);
+    // công thức đầy đủ: x = (A^T * A)^(-1) * A^T * b
+    Vector2d sol_chan = A_chan.colPivHouseholderQr().solve(b_chan); // Giải bằng QR decomposition (robust cho hệ overdetermined)    
+    double x0 = sol_chan(0); // Vị trí x ban đầu từ Chan
+    double y0 = sol_chan(1); // Vị trí y ban đầu từ Chan
     
     // DEBUG: In ra kết quả Chan
     // std::cout << "Chan initial guess: x0=" << x0 << ", y0=" << y0 << std::endl;
@@ -212,25 +223,27 @@ std::pair<double, double> TDOASolver::computePosition(
     // Nếu NaN hoặc ngoài bia (~100cm), dùng tâm bia (0,0)
     if (std::isnan(x0) || std::isnan(y0) || std::abs(x0) > 150 || std::abs(y0) > 150) {
         // std::cout << "Invalid initial position, using (0,0)" << std::endl;
-        x0 = 0.0;
-        y0 = 0.0;
+        x0 = 0.0; // Đặt lại vị trí ban đầu về tâm bia nếu kết quả Chan không hợp lệ
+        y0 = 0.0; // (0,0) là vị trí trung tâm của bia, an toàn để bắt đầu tối ưu hóa
     }
 
     // ========================================================================
     // BƯỚC 4: Tối ưu hóa bằng Levenberg-Marquardt (LM)
+    // Sử dụng vị trí ban đầu từ Chan để bắt đầu tối ưu hóa phi tuyến
+    // công thức: minimize ||F(xy)||^2 với F(xy) là vector residual từ TDOA equations
     // ========================================================================
     VectorXd xy(2);
     xy << x0, y0;
     
     // Tạo functor với dữ liệu TDOA
-    TDOAFunctor functor = {tdoa, v, SENSORS};
+    TDOAFunctor functor = {tdoa, v, SENSORS}; // Cung cấp TDOA, vận tốc âm thanh, và vị trí cảm biến cho functor
     
     // Tạo đối tượng LM solver
-    LevenbergMarquardt<TDOAFunctor> lm(functor);
+    LevenbergMarquardt<TDOAFunctor> lm(functor); // Sử dụng functor để tối ưu hóa vị trí (x,y)
     
     // Cấu hình LM cho tối ưu hóa đầy đủ (không cần tốc độ nhanh)
     // Tăng độ chính xác convergence
-    lm.parameters.ftol = 1e-8;    // Function tolerance (residual norm)
+    lm.parameters.ftol = 1e-8;    // Function value tolerance
     lm.parameters.xtol = 1e-8;    // Parameter change tolerance
     lm.parameters.gtol = 1e-8;    // Gradient tolerance
     lm.parameters.maxfev = 5000;  // Max function evaluations (default ~200)
@@ -240,7 +253,7 @@ std::pair<double, double> TDOASolver::computePosition(
     //           << xy(0) << ", " << xy(1) << ")" << std::endl;
     
     // Chạy tối ưu hóa
-    int ret = lm.minimize(xy);
+    int ret = lm.minimize(xy); // Kết quả tối ưu hóa, xy sẽ chứa vị trí tối ưu sau khi chạy
     
     // DEBUG: In ra kết quả LM
     // std::cout << "LM optimization result code: " << ret << std::endl;
@@ -253,7 +266,7 @@ std::pair<double, double> TDOASolver::computePosition(
     // ========================================================================
     // std::cout << "Final position: x=" << xy(0) << " cm, y=" << xy(1) << " cm" << std::endl;
     
-    return {xy(0), xy(1)};
+    return {xy(0), xy(1)}; // Trả về vị trí (x,y) tính bằng cm
 }
 
 // ============================================================================
