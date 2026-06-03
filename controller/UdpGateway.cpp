@@ -1,8 +1,10 @@
 // UdpGateway.cpp
 #include "UdpGateway.hpp"
 
+// khởi tạo socket UDP và thiết lập kết nối
 UdpGateway::UdpGateway(QObject *parent) : QObject(parent), socket(new QUdpSocket(this)) {}
 
+// bắt đầu lắng nghe trên cổng địa phương và thiết lập địa chỉ từ xa
 bool UdpGateway::start(quint16 localPort, const QHostAddress &remoteHost, quint16 remotePort) {
     remoteAddr = remoteHost;
     this->remotePort = remotePort;
@@ -13,11 +15,13 @@ bool UdpGateway::start(quint16 localPort, const QHostAddress &remoteHost, quint1
     return true;
 }
 
+// gửi lệnh đến thiết bị qua UDP
 void UdpGateway::sendCommand(const QString &cmd) {
     QByteArray datagram = cmd.toUtf8();
     socket->writeDatagram(datagram, remoteAddr, remotePort);
 }
 
+// xử lý dữ liệu nhận được từ thiết bị
 void UdpGateway::onReadyRead() {
     while (socket->hasPendingDatagrams()) {
         QByteArray buffer;

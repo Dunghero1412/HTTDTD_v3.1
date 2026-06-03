@@ -53,6 +53,10 @@ private:
     static uint32_t delayStartTick;
     static bool delayActive;
 
+    static uint32_t captureStartTick;     // Thời gian bắt đầu capture đầu tiên (ms)
+    static uint8_t captureCount;          // Số sensor đã capture trong 50ms hiện tại
+    static const uint32_t CAPTURE_TIMEOUT = 50;  // Timeout 50ms cho capture
+
     static char spiTxBuffer[256];
     static uint16_t spiTxLen;
 };

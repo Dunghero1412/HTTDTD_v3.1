@@ -80,7 +80,7 @@ void NodeController::run() {
             int ld = lgGpioRead(gpioHandle, GPIO_LOAD_DATA);
             if (ld == 1) {
                 // STM32 báo sẵn sàng
-                uint64_t timestamps[6];
+                uint64_t timestamps[6]; // A-F
                 float temp;
                 if (readTimestamps(timestamps, temp)) {
                     // Tính toán vị trí

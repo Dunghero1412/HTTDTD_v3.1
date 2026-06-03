@@ -1,6 +1,8 @@
 // ============================================================================
 // File: spi_slave.hpp
 // Mô tả: Lớp điều khiển SPI3 ở chế độ slave để gửi dữ liệu sang Raspberry Pi.
+// việc sử dụng SPI3 vì nó có chân NSS riêng biệt (PA15) giúp dễ dàng quản lý tín hiệu chọn chip.
+// RPI sẽ là master, STM32F407VET6 sẽ là slave, và chúng ta sẽ sử dụng ngắt để xử lý việc truyền dữ liệu khi RPI yêu cầu.
 // ============================================================================
 #pragma once
 #include "system.h"
@@ -20,9 +22,9 @@ public:
     static void handleNSSInterrupt();
 
     // Được gọi khi NSS xuống thấp (bắt đầu phiên truyền)
-    static void onNSSFalling();
+    static void onNSSFalling(); // Bắt đầu phiên truyền, rpi đưa NSS xuống thấp khi nhận lệnh từ DR và gửi dummy byte để kích hoạt truyền dữ liệu từ STM32F407VET6 sang RPI
     // Được gọi khi NSS lên cao (kết thúc phiên truyền)
-    static void onNSSRising();
+    static void onNSSRising(); // Kết thúc phiên truyền, rpi đưa NSS lên cao đồng thời kích chân RDC để STM32F407VET6 biết đã hoàn thành truyền dữ liệu
 
     static bool transmitting;   // true nếu NSS đang thấp (đang trong phiên truyền)
     static const uint8_t* txBuf;

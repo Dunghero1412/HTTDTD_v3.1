@@ -27,6 +27,10 @@ uint32_t TDOAManager::successCount = 0;
 uint32_t TDOAManager::delayStartTick = 0;
 // Cờ báo đang trong thời gian delay 2 giây
 bool TDOAManager::delayActive = false;
+// Thời gian bắt đầu capture đầu tiên (ms)
+uint32_t TDOAManager::captureStartTick = 0;
+// Số sensor đã capture trong 50ms hiện tại
+uint8_t TDOAManager::captureCount = 0;
 // Buffer và độ dài dữ liệu sẽ gửi qua SPI
 char TDOAManager::spiTxBuffer[256];
 // Độ dài dữ liệu đã đóng gói sẵn để gửi qua SPI
@@ -217,10 +221,11 @@ void TDOAManager::processEvents() {
         if (HAL_GPIO_ReadPin(TC_PORT, TC_PIN) == GPIO_PIN_RESET) {
             stopCaptureAndClear();
             currentState = IDLE;
+            break;
         }
+        
         // Kiểm tra đã capture đủ 6 kênh chưa
-        if (channelCaptured[0] && channelCaptured[1] && channelCaptured[2] && 
-            channelCaptured[3] && channelCaptured[4] && channelCaptured[5]) {
+        if (captureCount == 6) {
             // Đủ 6 timestamp -> đóng gói và báo DATA_READY
             packDataForSPI();
             SPISlave::setTxData((const uint8_t*)spiTxBuffer, spiTxLen);
@@ -228,6 +233,12 @@ void TDOAManager::processEvents() {
             currentState = DATA_READY;
             // Tắt ngắt capture để tránh capture thêm (đợi RPI đọc xong)
             disableCaptureChannels();
+        }
+        // Kiểm tra timeout 50ms: nếu đã capture ít nhất 1 kênh nhưng chưa đủ 6 trong vòng 50ms
+        else if (captureCount > 0 && (HAL_GetTick() - captureStartTick >= CAPTURE_TIMEOUT)) {
+            // Timeout 50ms nhưng chưa đủ 6 sensor -> hủy và tiếp tục chờ
+            stopCaptureAndClear();
+            startCaptureSequence();  // Khởi tạo lại sẵn sàng capture
         }
         break;
 
@@ -252,6 +263,11 @@ void TDOAManager::onRS_IRQ() {
 // Các callback capture: lưu giá trị capture và overflow hiện tại, sau đó tắt ngắt kênh đó
 void TDOAManager::onCaptureCH1(uint32_t val) {
     if (currentState == CAPTURING && !channelCaptured[0]) {
+        // Nếu đây là capture đầu tiên, lưu thời gian bắt đầu
+        if (captureCount == 0) {
+            captureStartTick = HAL_GetTick();
+        }
+        
         uint32_t ov = overflow_count;
         // Nếu cờ tràn đang set -> tăng thêm 1 vì ngắt tràn chưa chạy
         if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE)) {
@@ -260,61 +276,92 @@ void TDOAManager::onCaptureCH1(uint32_t val) {
         captures[0].overflow = ov;
         captures[0].tick = val;
         channelCaptured[0] = true;
+        captureCount++;
         __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC1);   // Không cho capture tiếp
     }
 }
 
 void TDOAManager::onCaptureCH2(uint32_t val) {
     if (currentState == CAPTURING && !channelCaptured[1]) {
+        // Nếu đây là capture đầu tiên, lưu thời gian bắt đầu
+        if (captureCount == 0) {
+            captureStartTick = HAL_GetTick();
+        }
+        
         uint32_t ov = overflow_count;
         if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE)) ov++;
         captures[1].overflow = ov;
         captures[1].tick = val;
         channelCaptured[1] = true;
+        captureCount++;
         __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC2);
     }
 }
 
 void TDOAManager::onCaptureCH3(uint32_t val) {
     if (currentState == CAPTURING && !channelCaptured[2]) {
+        // Nếu đây là capture đầu tiên, lưu thời gian bắt đầu
+        if (captureCount == 0) {
+            captureStartTick = HAL_GetTick();
+        }
+        
         uint32_t ov = overflow_count;
         if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE)) ov++;
         captures[2].overflow = ov;
         captures[2].tick = val;
         channelCaptured[2] = true;
+        captureCount++;
         __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC3);
     }
 }
 
 void TDOAManager::onCaptureCH4(uint32_t val) {
     if (currentState == CAPTURING && !channelCaptured[3]) {
+        // Nếu đây là capture đầu tiên, lưu thời gian bắt đầu
+        if (captureCount == 0) {
+            captureStartTick = HAL_GetTick();
+        }
+        
         uint32_t ov = overflow_count;
         if (__HAL_TIM_GET_FLAG(&htim2, TIM_FLAG_UPDATE)) ov++;
         captures[3].overflow = ov;
         captures[3].tick = val;
         channelCaptured[3] = true;
+        captureCount++;
         __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC4);
     }
 }
 
 void TDOAManager::onCaptureCH5(uint32_t val) {
     if (currentState == CAPTURING && !channelCaptured[4]) {
+        // Nếu đây là capture đầu tiên, lưu thời gian bắt đầu
+        if (captureCount == 0) {
+            captureStartTick = HAL_GetTick();
+        }
+        
         uint32_t ov = overflow_count;
         if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_UPDATE)) ov++;
         captures[4].overflow = ov;
         captures[4].tick = val;
         channelCaptured[4] = true;
+        captureCount++;
         __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC5);
     }
 }
 
 void TDOAManager::onCaptureCH6(uint32_t val) {
     if (currentState == CAPTURING && !channelCaptured[5]) {
+        // Nếu đây là capture đầu tiên, lưu thời gian bắt đầu
+        if (captureCount == 0) {
+            captureStartTick = HAL_GetTick();
+        }
+        
         uint32_t ov = overflow_count;
         if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_UPDATE)) ov++;
         captures[5].overflow = ov;
         captures[5].tick = val;
         channelCaptured[5] = true;
+        captureCount++;
         __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC6);
     }
 }
@@ -358,6 +405,9 @@ void TDOAManager::startCaptureSequence() {
         captures[i].overflow = 0;
         captures[i].tick = 0;
     }
+    // Reset counter và timestamp
+    captureCount = 0;
+    captureStartTick = 0;
     // Bật lại ngắt capture cho tất cả các kênh
     enableCaptureChannels();
 }
@@ -367,6 +417,9 @@ void TDOAManager::stopCaptureAndClear() {
     for (int i = 0; i < 6; ++i) {
         channelCaptured[i] = false;
     }
+    // Reset counter và timestamp
+    captureCount = 0;
+    captureStartTick = 0;
 }
 
 void TDOAManager::resetSystem() {
@@ -380,6 +433,9 @@ void TDOAManager::resetSystem() {
     successCount = 0;
     overflow_count = 0;
     __HAL_TIM_SET_COUNTER(&htim2, 0);
+    // Reset capture counters
+    captureCount = 0;
+    captureStartTick = 0;
     HAL_GPIO_WritePin(DATA_READY_PORT, DATA_READY_PIN, GPIO_PIN_RESET);
     delayActive = false;
     currentState = IDLE;
@@ -440,10 +496,13 @@ extern "C" void TIM5_IRQHandler(void) {
         TDOAManager::onCaptureCH6(cap);
     }
     // Tràn update
-    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_UPDATE) != RESET) {
-        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_UPDATE);
-        TDOAManager::onOverflow();
-    }
+    //if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_UPDATE) != RESET) {
+    //    __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_UPDATE);
+    //    TDOAManager::onOverflow();
+    //
+    // Vì TIM2 và TIM5 cùng source clock, nên chỉ cần đếm overflow ở TIM2 là đủ, không cần đếm ở TIM5
+    // Nếu đếm ở cả 2 timer sẽ bị tăng gấp đôi overflow_count, dẫn đến timestamp sai lệch rất lớn. Do đó, chỉ đếm overflow ở TIM2 thôi.
+    //}
 }
 
 // Ngắt ngoài PB1 (RDC)

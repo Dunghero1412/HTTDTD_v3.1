@@ -3,13 +3,17 @@
 // Mô tả: Định nghĩa các chân, hằng số và khai báo biến toàn cục dùng chung.
 //        Hỗ trợ TIM2 (4 cảm biến A,B,C,D) + TIM5 (2 cảm biến E,F)
 //        Clock: SYSCLK=168MHz, APB1=42MHz->TIM=84MHz, APB2=84MHz->TIM=168MHz
+//        Lưu ý: TIM2 và TIM5 đều ở APB1 nên có cùng clock 84MHz, resolution ~11.9ns
+//        Không chỉnh sửa file này nếu không cần thiết, tránh xung đột chân và cấu hình với các module khác.
+//        Tác giả: Chiêm Dũng
+//        Ngày tạo: 29/05/2026
 // ============================================================================
 #pragma once
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal.h" // Thư viện HAL cho STM32F4
 
 // ---------- TIM2 input capture (cảm biến piezoelectric A,B,C,D) @ 84MHz ----------
 #define TIM2_CH1_PIN        GPIO_PIN_0 // Sensor A
@@ -69,9 +73,9 @@ extern "C" {
 #define RS_PORT             GPIOB
 
 // ---------- USART1 – Debug/UART ----------
-#define UART1_TX_PIN        GPIO_PIN_9
+#define UART1_TX_PIN        GPIO_PIN_9   // PA9
 #define UART1_TX_PORT       GPIOA
-#define UART1_RX_PIN        GPIO_PIN_10
+#define UART1_RX_PIN        GPIO_PIN_10  // PA10
 #define UART1_RX_PORT       GPIOA
 
 // ---------- Hằng số hệ thống ----------
@@ -89,6 +93,7 @@ extern "C" {
 
 // ---------- Biến toàn cục overflow counters ----------
 // Biến đếm tràn TIM2 (toàn cục, sử dụng để mở rộng timestamp lên 64-bit)
+// nên khai báo theo kiểu volatile vì nó được cập nhật trong ngắt và đọc ở main loop
 extern volatile uint32_t overflow_count;
 
 // Biến đếm tràn TIM5 (toàn cục, sử dụng để mở rộng timestamp lên 64-bit)

@@ -2,6 +2,8 @@
 // File: Core/Inc/stm32f4xx_hal_conf.h
 // Mô tả: Cấu hình các module HAL được sử dụng trong dự án TDOA.
 //        Chỉ bật các module cần thiết để tiết kiệm bộ nhớ và tăng tốc build.
+//        Tác giả : Chiêm Dũng.
+//        Ngày tạo: 26/5/2026
 // ============================================================================
 
 #ifndef __STM32F4xx_HAL_CONF_H
@@ -28,7 +30,7 @@
 // TIM5: Timer input capture (cảm biến piezoelectric E,F)
 #define HAL_TIM_BASE_MODULE_ENABLED 1   // Timer base (cần cho input capture)
 #define HAL_TIM_IC_MODULE_ENABLED   1   // Input capture (cần cho TIM2, TIM5)
-#define HAL_TIM_MODULE_ENABLED      1   // Timer (TIM2 capture)
+#define HAL_TIM_MODULE_ENABLED      1   // Timer (TIM2 capture) + (TIM5 capture)
 #define HAL_SPI_MODULE_ENABLED      1   // SPI2 (BME280) + SPI3 (RPI)
 #define HAL_UART_MODULE_ENABLED     1   // USART1 debug
 #define HAL_EXTI_MODULE_ENABLED     1   // Ngắt ngoài (TC, RDC, RS, NSS)
@@ -112,43 +114,43 @@
 
 // ---------- Include các header HAL theo module đã bật ----------
 #ifdef HAL_RCC_MODULE_ENABLED
-  #include "stm32f4xx_hal_rcc.h"
+  #include "stm32f4xx_hal_rcc.h" // Cấu hình clock
 #endif
 
 #ifdef HAL_GPIO_MODULE_ENABLED
-  #include "stm32f4xx_hal_gpio.h"
+  #include "stm32f4xx_hal_gpio.h" // Điều khiển GPIO (các chân điều khiển, cảm biến piezoelectric)
 #endif
 
 #ifdef HAL_DMA_MODULE_ENABLED
-  #include "stm32f4xx_hal_dma.h"
+  #include "stm32f4xx_hal_dma.h" // Không dùng DMA trong dự án này, nên tắt để tiết kiệm bộ nhớ, nhưng vẫn bật sẵn vì sắp tới sẽ dùng DMA cho SPI3 (RPI)
 #endif
 
 #ifdef HAL_CORTEX_MODULE_ENABLED
-  #include "stm32f4xx_hal_cortex.h"
+  #include "stm32f4xx_hal_cortex.h" // NVIC, SysTick (cần cho ngắt và delay)
 #endif
 
 #ifdef HAL_PWR_MODULE_ENABLED
-  #include "stm32f4xx_hal_pwr.h"
+  #include "stm32f4xx_hal_pwr.h" // Quản lý nguồn (cần cho clock, sleep mode)
 #endif
 
 #ifdef HAL_FLASH_MODULE_ENABLED
-  #include "stm32f4xx_hal_flash.h"
+  #include "stm32f4xx_hal_flash.h" // Thao tác Flash (cần cho clock, và có thể dùng để lưu cấu hình nếu cần) 
 #endif
 
 #ifdef HAL_TIM_MODULE_ENABLED
-  #include "stm32f4xx_hal_tim.h"
+  #include "stm32f4xx_hal_tim.h" // Timer (TIM2 capture) + (TIM5 capture) - cần cho input capture
 #endif
 
 #ifdef HAL_SPI_MODULE_ENABLED
-  #include "stm32f4xx_hal_spi.h"
+  #include "stm32f4xx_hal_spi.h" // SPI2 (BME280) + SPI3 (RPI) - cần cho giao tiếp với cảm biến và RPI
 #endif
 
 #ifdef HAL_UART_MODULE_ENABLED
-  #include "stm32f4xx_hal_uart.h"
+  #include "stm32f4xx_hal_uart.h" // USART1 debug - cần cho giao tiếp debug qua UART
 #endif
 
 #ifdef HAL_EXTI_MODULE_ENABLED
-  #include "stm32f4xx_hal_exti.h"
+  #include "stm32f4xx_hal_exti.h" // Ngắt ngoài (TC, RDC, RS, NSS) - cần cho các tín hiệu ngắt từ cảm biến và RPI
 #endif
 
 // ---------- Macro kiểm tra tham số (chỉ dùng khi debug) ----------
@@ -158,9 +160,11 @@
 //#else
   #define assert_param(expr) ((void)0U)  // Tắt assert_param để tối ưu
 //#endif
+// huỷ bỏ hàm assert_failed vì gây ra lỗi khi build, sẽ sửa lại sau hoặc bỏ hẳn nếu không cần debug
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __STM32F4xx_HAL_CONF_H */
+// chỉ chỉnh sửa khi cần thêm module HAL hoặc thay đổi cấu hình clock. việc cấu sai đồng hồ sẽ gây ra lỗi nghiêm trọng, nên cần cẩn thận khi chỉnh sửa phần này.

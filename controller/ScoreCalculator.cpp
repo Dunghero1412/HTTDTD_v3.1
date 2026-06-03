@@ -3,7 +3,7 @@
 #include <cmath>
 
 int ScoreCalculator::calculateScore(double x, double y) {
-    double r = std::sqrt(x*x + y*y);
+    double r = std::sqrt(x*x + y*y); // công thức tính khoảng cách từ tâm (0,0) đến điểm (x,y) = sqrt(x^2 + y^2)
     // Bán kính các vòng (cm): bulls-eye 1.25, sau đó cộng dần 3.5 cm
     const double radii[] = {1.25, 4.75, 8.25, 11.75, 15.25, 18.75, 22.25};
     const int scores[]   = {10, 9, 8, 7, 6, 5, 4};
