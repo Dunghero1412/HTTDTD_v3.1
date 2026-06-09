@@ -6,7 +6,7 @@
 graph TB
     subgraph "Thao Trường (Physical)"
         TARGET["🎯 Bia Mục Tiêu"]
-        SENSORS["📡 4 Cảm Biến Piezoelectric<br/>Vị trí: A, B, C, D"]
+        SENSORS["📡 6 Cảm Biến Piezoelectric<br/>Vị trí: A, B, C, D, E, F"]
         BULLET["💥 Đạn Thật<br/>(Impact Event)"]
     end
 
@@ -55,7 +55,7 @@ graph TB
     BULLET -->|"Impact Sound Wave"| SENSORS
     SENSORS -->|"Analog Signal"| STM32
     NODE -->|"LoRa Packet<br/>(x,y,Battery,Temp)"| GATEWAY
-    GATEWAY -->|"UDP Port 1680/1780"| CONTROLLER
+    GATEWAY -->|"UDP Port 1680/1780 (tuỳ chọn)"| CONTROLLER
     CONTROLLER -->|"Commands"| NODE
     CONTROLLER -->|"Update UI"| UI
     UI -->|"Display Results"| SCOREBOARD
@@ -91,7 +91,7 @@ sequenceDiagram
     Note over Sensor: 💥 ĐẠN VỀ BIA
     Sensor->>STM32: Tín hiệu Piezo (mV)
     STM32->>STM32: Comparator detect → Trigger
-    STM32->>STM32: Capture timestamp[A,B,C,D]<br/>(4 timestamps)
+    STM32->>STM32: Capture timestamp[A,B,C,D,E,F]<br/>(6 timestamps)
     
     Note over STM32: Tính TDOA:<br/>tB-tA, tC-tA, tD-tA<br/>Đơn vị: 1/168MHz = 5.95ns
     
@@ -125,18 +125,18 @@ graph TB
         direction TB
         
         MAIN["🔴 main()<br/>Startup"]
-        SYSCLOCK["⏰ System Clock<br/>168MHz PLL"]
+        SYSCLOCK["⏰ System Clock<br/>84MHz PLL"]
         GPIO["🔌 GPIO Config<br/>PA0-PA7: Analog IN"]
         I2C["🔗 I2C1<br/>BME280"]
         SPI["📡 SPI1<br/>LoRa Module"]
         TIMER["⏱️ TIM2 Timer<br/>168MHz"]
-        ADC["🔌 ADC1<br/>4 Channel"]
+        ADC["🔌 ADC1<br/>6 Channel"]
         COMP["🔍 Comparator"]
         DMA["📦 DMA"]
         UART["📡 UART1<br/>Debug"]
         
         MAIN -->|"Init"| SYSCLOCK
-        SYSCLOCK -->|"168MHz"| TIMER
+        SYSCLOCK -->|"84MHz"| TIMER
         SYSCLOCK -->|"Config"| GPIO
         GPIO -->|"Enable"| ADC
         GPIO -->|"Enable"| I2C
