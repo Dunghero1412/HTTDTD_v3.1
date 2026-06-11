@@ -22,7 +22,7 @@ graph TB
             
             STM32 -->|"UART/SPI"| LORA
             BME280 -->|"I2C/SPI"| STM32
-            STM32 -->|"Timestamps (168MHz)"| TDOA_CALC
+            STM32 -->|"Timestamps (84MHz)"| TDOA_CALC
             TDOA_CALC -->|"(x,y) Result"| LORA
         end
     end
@@ -86,17 +86,17 @@ sequenceDiagram
     Note over Node: Motor bắt đầu quay<br/>(70 giây)
     
     User->>UI: 2. Chờ kích hoạt
-    Node->>STM32: Khởi tạo Timer 168MHz
+    Node->>STM32: Khởi tạo Timer 84MHz
     
     Note over Sensor: 💥 ĐẠN VỀ BIA
     Sensor->>STM32: Tín hiệu Piezo (mV)
     STM32->>STM32: Comparator detect → Trigger
     STM32->>STM32: Capture timestamp[A,B,C,D,E,F]<br/>(6 timestamps)
     
-    Note over STM32: Tính TDOA:<br/>tB-tA, tC-tA, tD-tA<br/>Đơn vị: 1/168MHz = 5.95ns
+    Note over STM32: Tính TDOA:<br/>tB-tA, tC-tA, tD-tA<br/>tE-tA, tF-tA<br/>Đơn vị: 1/84MHz = 11.9ns
     
     STM32->>STM32: Đọc BME280 → Nhiệt độ
-    STM32->>TDoA: timestamps[4] + T
+    STM32->>TDoA: timestamps[6] + T
     TDoA->>TDoA: 1. Tính vận tốc âm<br/>v = 331.5 + 0.607*T (m/s)
     TDoA->>TDoA: 2. Chan method<br/>(Linear init)
     TDoA->>TDoA: 3. Levenberg-Marquardt<br/>(Non-linear optimize)
@@ -126,10 +126,10 @@ graph TB
         
         MAIN["🔴 main()<br/>Startup"]
         SYSCLOCK["⏰ System Clock<br/>84MHz PLL"]
-        GPIO["🔌 GPIO Config<br/>PA0-PA7: Analog IN"]
+        GPIO["🔌 GPIO Config<br/>PA0-PA5: Analog IN"]
         I2C["🔗 I2C1<br/>BME280"]
         SPI["📡 SPI1<br/>LoRa Module"]
-        TIMER["⏱️ TIM2 Timer<br/>168MHz"]
+        TIMER["⏱️ TIM2 Timer<br/>84MHz"]
         ADC["🔌 ADC1<br/>6 Channel"]
         COMP["🔍 Comparator"]
         DMA["📦 DMA"]
@@ -154,13 +154,13 @@ graph TB
     end
     
     subgraph "Data Processing"
-        RAWDATA["Raw Timestamps<br/>4x 32-bit<br/>Unit: 1/168MHz"]
+        RAWDATA["Raw Timestamps<br/>6x 32-bit<br/>Unit: 1/84MHz"]
         TDOA["TDOA Calculation"]
         SPEED["Speed of Sound<br/>v = 331.5 + 0.607*T"]
         POSITION["Position x,y<br/>Chan + LM"]
     end
     
-    DMA -->|"4 TS"| RAWDATA
+    DMA -->|"6 TS"| RAWDATA
     MAIN -->|"Temp"| SPEED
     RAWDATA -->|"Δt"| TDOA
     TDOA -->|"+ Speed"| POSITION
@@ -178,13 +178,13 @@ graph TB
 
 ```mermaid
 graph LR
-    INPUT["📥 Input:<br/>timestamps[4]<br/>temperature°C"]
+    INPUT["📥 Input:<br/>timestamps[6]<br/>temperature°C"]
     
     TEMP["🌡️ Temperature<br/>Compensation<br/>v = 331.5 + 0.607*T<br/>m/s → cm/s"]
     
-    TDOA_CAL["🔢 TDOA Calc<br/>tA = ts[0]/168e6<br/>tB = ts[1]/168e6<br/>TDOA[i]=t[i+1]-tA"]
+    TDOA_CAL["🔢 TDOA Calc<br/>tA = ts[0]/84e6<br/>tB = ts[1]/84e6<br/>...<br/>tF = ts[5]/84e6<br/>TDOA[i]=t[i]-tA"]
     
-    CHAN["📐 Chan Method<br/>Initial Guess<br/>2x2 Linear System"]
+    CHAN["📐 Chan Method<br/>Initial Guess<br/>2x2 Linear System<br/>(4 TDOA values)"]
     
     INIT_POS["✓ Initial Position<br/>x0, y0<br/>from Chan"]
     
@@ -195,7 +195,7 @@ graph LR
     OUTPUT["📤 Output:<br/>x_final, y_final<br/>cm"]
     
     INPUT -->|"T: 25°C"| TEMP
-    INPUT -->|"168MHz"| TDOA_CAL
+    INPUT -->|"84MHz"| TDOA_CAL
     
     TEMP -->|"v cm/s"| TDOA_CAL
     TDOA_CAL -->|"Δt sec"| CHAN
@@ -318,7 +318,7 @@ graph LR
         LORA["LoRa SX1276<br/>SPI"]
     end
 
-    STM_SPI -->|"Timestamp Data<br/>4x32-bit<br/>1MHz"| RPI_SPI
+    STM_SPI -->|"Timestamp Data<br/>6x32-bit<br/>1MHz"| RPI_SPI
     RPI_SPI -->|"Temp Req<br/>0x01"| STM_SPI
     
     STM_UART -->|"Debug<br/>115200"| RPI_UART
@@ -357,7 +357,7 @@ stateDiagram-v2
     
     note right of ACTIVATED
         Motor ON
-        Capture TDoA
+        Capture TDoA (6 sensors)
     end note
     
     note right of MARKING
@@ -382,10 +382,11 @@ graph TB
         PA1["PA1 ADC1"]
         PA2["PA2 ADC2"]
         PA3["PA3 ADC3"]
-        PA4["PA4 SPI CS"]
-        PA5["PA5 SPI CLK"]
+        PA4["PA4 ADC4"]
+        PA5["PA5 ADC5"]
         PA6["PA6 SPI MISO"]
         PA7["PA7 SPI MOSI"]
+        PA8["PA8 SPI CLK"]
         PA9["PA9 UART TX"]
         PA10["PA10 UART RX"]
         PB0["PB0 GPIO IN DR"]
@@ -400,6 +401,8 @@ graph TB
         SB["📡 Sensor B"]
         SC["📡 Sensor C"]
         SD["📡 Sensor D"]
+        SE["📡 Sensor E"]
+        SF["📡 Sensor F"]
         BME["🌡️ BME280"]
         LORA_M["📶 LoRa"]
     end
@@ -414,13 +417,14 @@ graph TB
     SB -->|"Analog"| PA1
     SC -->|"Analog"| PA2
     SD -->|"Analog"| PA3
+    SE -->|"Analog"| PA4
+    SF -->|"Analog"| PA5
     
     BME -->|"I2C"| I2C
     
-    LORA_M -->|"SPI"| PA5
-    LORA_M -->|"SPI"| PA6
-    LORA_M -->|"SPI"| PA7
-    LORA_M -->|"CS"| PA4
+    LORA_M -->|"SPI CLK"| PA8
+    LORA_M -->|"SPI MISO"| PA6
+    LORA_M -->|"SPI MOSI"| PA7
     
     PA9 -->|"TX"| UART
     PA10 -->|"RX"| UART
@@ -582,12 +586,12 @@ HTTDTD_v3.1/
 ```
 🎯 Target
     ↓
-💥 Impact → Piezo
+💥 Impact → Piezo (6 Sensors A-F)
     ↓
-📡 STM32 Capture 4x timestamps @ 168MHz
+📡 STM32 Capture 6x timestamps @ 84MHz
     ↓
 🔢 TDOASolver: Chan + LM
-    ├─ TDOA: tB-tA, tC-tA, tD-tA
+    ├─ TDOA: tB-tA, tC-tA, tD-tA, tE-tA, tF-tA
     ├─ Speed: 331.5 + 0.607*T
     └─ Result: (x, y) cm
     ↓
@@ -671,8 +675,8 @@ timeline
     
     section Firing
         10:00 : 💥 BULLET HIT
-        10:00 : Capture 4x TS
-        10:10 : TDOASolver Calc
+        10:00 : Capture 6x TS (A-F)
+        10:10 : TDOASolver Calc (84MHz)
         10:20 : LoRa Send
         10:30 : Update Scoreboard
         10:35 : Display x=25.3 y=15.2 Score=95
@@ -720,6 +724,21 @@ timeline
 
 ---
 
-**Cập nhật:** 26 Tháng 5 Năm 2026  
-**Phiên bản:** 1.0  
+**Cập nhật:** 11 Tháng 6 Năm 2026  
+**Phiên bản:** 2.0  
 **Tác giả:** Chiêm Dũng (Dunghero1412)
+
+---
+
+## 📝 Changelog v2.0
+
+### Thay đổi chính:
+- ✅ **6 Cảm Biến Piezoelectric** (A, B, C, D, E, F) - thay vì 4 cảm biến
+- ✅ **Timer 84MHz** - thay vì 168MHz
+  - Độ phân giải: 1/84MHz = **11.9ns** (trước: 5.95ns)
+  - Phù hợp với yêu cầu hiệu suất STM32F407
+- ✅ **6 Timestamps** thay vì 4 timestamps
+- ✅ **6 GPIO Analog** (PA0-PA5) cho 6 cảm biến
+- ✅ **TDOA tính toán 5 giá trị** (tB-tA, tC-tA, tD-tA, tE-tA, tF-tA)
+- ✅ **Cập nhật hardware connections diagram** với đầy đủ 6 cảm biến
+- ✅ **Cập nhật SPI connections** để phù hợp với GPIO mới (PA6, PA7, PA8)
