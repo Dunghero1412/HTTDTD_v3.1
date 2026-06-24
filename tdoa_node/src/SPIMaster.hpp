@@ -15,7 +15,7 @@ public:
     // Yêu cầu nhiệt độ (gửi lệnh 0x01 rồi đọc phản hồi)
     float requestTemperature();
 private:
-    int spi_fd;
+    int spi_fd = -1;
     uint8_t transfer(uint8_t tx);
     void chipSelect(bool active);
 };

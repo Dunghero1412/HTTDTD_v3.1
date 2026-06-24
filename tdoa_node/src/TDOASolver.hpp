@@ -11,10 +11,10 @@
 
 class TDOASolver {
 public:
-    // Đầu vào: timestamp 64-bit của 4 kênh (A,B,C,D) và nhiệt độ (độ C)
+    // Đầu vào: timestamp 64-bit của 6 kênh (A,B,C,D,E,F) và nhiệt độ (độ C)
     // Đầu ra: cặp (x,y) tính bằng cm
     static std::pair<double, double> computePosition(
-        const uint64_t timestamps[4], double temperature);
+        const uint64_t timestamps[6], double temperature);
 
 private:
     // Tính vận tốc âm thanh từ nhiệt độ (độ C)
@@ -29,16 +29,12 @@ private:
 // ============================================================================
 struct TDOAFunctor {
     // Input data
-    const double* tdoa;           // mảng 3 giá trị TDOA (B-A, C-A, D-A) [s]
+    const double* tdoa;           // mảng 5 giá trị TDOA (B-A, C-A, D-A, E-A, F-A) [s]
     double v;                     // vận tốc âm thanh (cm/s)
-    const void* sensorsPtr;       // con trỏ đến SENSORS array
-    
-    // Operator(): compute residual vector
-    // Input: xy = [x, y] tính bằng cm
-    // Output: fvec = residual (expected_TDOA - measured_TDOA)
+    const SensorPos* sensors;     // con trỏ đến SENSORS array
+
     int operator()(const Eigen::VectorXd& xy, Eigen::VectorXd& fvec) const;
-    
-    // Operator(): compute Jacobian matrix (analytical, tối ưu LM)
-    // Output: fjac = dF/d(x,y) ma trận 3x2
     int df(const Eigen::VectorXd& xy, Eigen::MatrixXd& fjac) const;
+    int inputs() const { return 2; }
+    int values() const { return 5; }
 };

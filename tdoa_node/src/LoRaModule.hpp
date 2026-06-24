@@ -9,6 +9,9 @@
 
 class LoRaModule {
 public:
+    LoRaModule();
+    ~LoRaModule();
+
     // Khởi tạo UART và cấu hình LoRa (SF, frequency, ...)
     bool init(const std::string& uartDev, int baud, int sf, int freqMHz);
 
@@ -28,10 +31,10 @@ public:
     int batteryPercent() const; // Tạm trả về 85
 
 private:
-    int uart_fd;
+    int uart_fd = -1;
     std::string rxBuffer;
     std::function<void(const std::string&)> recvCallback;
-    int sf;
-    int freq;
+    int sf = 7;
+    int freq = 0;
     void parseLine(const std::string& line);
 };

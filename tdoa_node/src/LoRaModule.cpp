@@ -11,6 +11,29 @@
 #include <thread>
 #include <chrono>
 
+static speed_t baudToSpeed(int baud) {
+    switch (baud) {
+        case 9600: return B9600;
+        case 19200: return B19200;
+        case 38400: return B38400;
+        case 57600: return B57600;
+        case 115200: return B115200;
+        case 230400: return B230400;
+        case 460800: return B460800;
+        case 921600: return B921600;
+        default: return B0;
+    }
+}
+
+LoRaModule::LoRaModule() = default;
+
+LoRaModule::~LoRaModule() {
+    if (uart_fd >= 0) {
+        close(uart_fd);
+        uart_fd = -1;
+    }
+}
+
 // khởi tạo UART cho LoRa module, cấu hình các tham số như SF, tần số, và chuẩn bị nhận dữ liệu
 bool LoRaModule::init(const std::string& uartDev, int baud, int sf, int freqMHz) {
     this->sf = sf;
@@ -20,15 +43,17 @@ bool LoRaModule::init(const std::string& uartDev, int baud, int sf, int freqMHz)
 
     struct termios tty;
     memset(&tty, 0, sizeof tty);
-    tcgetattr(uart_fd, &tty);
-    cfsetospeed(&tty, B115200);
-    cfsetispeed(&tty, B115200);
+    if (tcgetattr(uart_fd, &tty) != 0) return false;
+    speed_t speed = baudToSpeed(baud);
+    if (speed == B0) return false;
+    cfsetospeed(&tty, speed);
+    cfsetispeed(&tty, speed);
     tty.c_cflag = CS8 | CREAD | CLOCAL;
     tty.c_iflag = IGNPAR;
     tty.c_oflag = 0;
     tty.c_lflag = 0;
     tcflush(uart_fd, TCIFLUSH);
-    tcsetattr(uart_fd, TCSANOW, &tty);
+    if (tcsetattr(uart_fd, TCSANOW, &tty) != 0) return false;
 
     // Cấu hình LoRa AT commands
     std::string cmd;
@@ -36,7 +61,7 @@ bool LoRaModule::init(const std::string& uartDev, int baud, int sf, int freqMHz)
     usleep(500000);
     cmd = "AT+MODE=0\r\n"; write(uart_fd, cmd.c_str(), cmd.size());
     usleep(100000);
-    cmd = "AT+IPR=115200\r\n"; write(uart_fd, cmd.c_str(), cmd.size());
+    cmd = "AT+IPR=" + std::to_string(baud) + "\r\n"; write(uart_fd, cmd.c_str(), cmd.size());
     usleep(100000);
     cmd = "AT+FREQ=" + std::to_string(freqMHz) + "000000\r\n"; write(uart_fd, cmd.c_str(), cmd.size());
     usleep(100000);
@@ -48,8 +73,10 @@ bool LoRaModule::init(const std::string& uartDev, int baud, int sf, int freqMHz)
 
 // hàm gửi dữ liệu qua LoRa module bằng cách sử dụng AT command, định dạng dữ liệu theo yêu cầu của module  
 bool LoRaModule::send(const std::string& data) {
+    if (uart_fd < 0) return false;
     std::string cmd = "AT+SEND=0," + std::to_string(data.size()) + "," + data + "\r\n";
-    write(uart_fd, cmd.c_str(), cmd.size());
+    ssize_t written = write(uart_fd, cmd.c_str(), cmd.size());
+    if (written != static_cast<ssize_t>(cmd.size())) return false;
     // Chờ phản hồi OK
     usleep(200000);
     return true;
@@ -62,6 +89,7 @@ void LoRaModule::setReceiveCallback(std::function<void(const std::string&)> cb) 
 
 // hàm này liên tục đọc dữ liệu từ UART, khi nhận được một dòng dữ liệu hoàn chỉnh (kết thúc bằng '\n'), nó sẽ gọi hàm parseLine để xử lý dữ liệu đó
 void LoRaModule::process() {
+    if (uart_fd < 0) return;
     char c;
     while (read(uart_fd, &c, 1) > 0) {
         if (c == '\n') {
@@ -80,11 +108,14 @@ void LoRaModule::parseLine(const std::string& line) {
     // Tìm dữ liệu nhận dạng +RCV=<addr>,<len>,<data>
     size_t pos = line.find("+RCV=");
     if (pos != std::string::npos) {
-        // Trích xuất data
-        size_t comma1 = line.find(',', pos+5);
-        size_t comma2 = line.find(',', comma1+1);
+        size_t comma1 = line.find(',', pos + 5);
+        size_t comma2 = line.find(',', comma1 + 1);
         if (comma1 != std::string::npos && comma2 != std::string::npos) {
-            std::string data = line.substr(comma2+1);
+            std::string data = line.substr(comma2 + 1);
+            // Loại bỏ CR nếu có
+            if (!data.empty() && data.back() == '\r') {
+                data.pop_back();
+            }
             if (recvCallback) recvCallback(data);
         }
     }

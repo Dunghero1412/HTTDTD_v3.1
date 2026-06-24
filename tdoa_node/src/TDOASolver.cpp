@@ -28,108 +28,53 @@ double TDOASolver::speedOfSound(double T) {
     return 331.5 + 0.607 * T; // m/s
 }
 
-// ============================================================================
-// Functor cho Levenberg-Marquardt Optimization
-// Dùng để tối ưu hóa vị trí (x, y) bằng cách minimize sai số TDOA
-// ============================================================================
-struct TDOAFunctor {
-    // Đầu vào
-    const double* tdoa;           // Mảng 3 giá trị TDOA: (tB-tA), (tC-tA), (tD-tA) [giây]
-    double v;                     // Vận tốc âm thanh [cm/s]
-    const SensorPos* sensors;     // Vị trí 4 cảm biến [cm]
+int TDOAFunctor::operator()(const VectorXd& xy, VectorXd& fvec) const {
+    double x = xy(0), y = xy(1);
+    
+    double dA = sqrt(pow(x - sensors[0].x, 2) + pow(y - sensors[0].y, 2));
+    double dB = sqrt(pow(x - sensors[1].x, 2) + pow(y - sensors[1].y, 2));
+    double dC = sqrt(pow(x - sensors[2].x, 2) + pow(y - sensors[2].y, 2));
+    double dD = sqrt(pow(x - sensors[3].x, 2) + pow(y - sensors[3].y, 2));
+    double dE = sqrt(pow(x - sensors[4].x, 2) + pow(y - sensors[4].y, 2));
+    double dF = sqrt(pow(x - sensors[5].x, 2) + pow(y - sensors[5].y, 2));
 
-    // ========================================================================
-    // Hàm compute residual (sai số)
-    // Input:  xy = vector 2 chiều [x, y] tính bằng cm
-    // Output: fvec = vector 3 chiều sai số [(expected - measured) TDOA]
-    // 
-    // Sai số = (d_i - d_A)/v - tdoa[i]
-    // ========================================================================
-    int operator()(const VectorXd& xy, VectorXd& fvec) const {
-        double x = xy(0), y = xy(1);
-        
-        // Tính khoảng cách từ (x,y) đến mỗi cảm biến
-        double dA = sqrt(pow(x - sensors[0].x, 2) + pow(y - sensors[0].y, 2));
-        double dB = sqrt(pow(x - sensors[1].x, 2) + pow(y - sensors[1].y, 2));
-        double dC = sqrt(pow(x - sensors[2].x, 2) + pow(y - sensors[2].y, 2));
-        double dD = sqrt(pow(x - sensors[3].x, 2) + pow(y - sensors[3].y, 2));
-        double dE = sqrt(pow(x - sensors[4].x, 2) + pow(y - sensors[4].y, 2));
-        double dF = sqrt(pow(x - sensors[5].x, 2) + pow(y - sensors[5].y, 2));
+    fvec(0) = (dB - dA) / v - tdoa[0];
+    fvec(1) = (dC - dA) / v - tdoa[1];
+    fvec(2) = (dD - dA) / v - tdoa[2];
+    fvec(3) = (dE - dA) / v - tdoa[3];
+    fvec(4) = (dF - dA) / v - tdoa[4];
 
-        // DEBUG: In ra khoảng cách (có thể bỏ comment để xem)
-        // std::cout << "dA=" << dA << " dB=" << dB << " dC=" << dC << " dD=" << dD << std::endl;
+    return 0;
+}
 
-        // TDOA = (d_i - d_A)/v - measured_tdoa[i]
-        // Nếu = 0 thì hoàn hảo
-        fvec(0) = (dB - dA) / v - tdoa[0];  // TDOA B vs A
-        fvec(1) = (dC - dA) / v - tdoa[1];  // TDOA C vs A
-        fvec(2) = (dD - dA) / v - tdoa[2];  // TDOA D vs A
-        fvec(3) = (dE - dA) / v - tdoa[3];  // TDOA E vs A
-        fvec(4) = (dF - dA) / v - tdoa[4];  // TDOA F vs A
+int TDOAFunctor::df(const VectorXd& xy, MatrixXd& fjac) const {
+    double x = xy(0), y = xy(1);
+    
+    double dA = sqrt(pow(x - sensors[0].x, 2) + pow(y - sensors[0].y, 2));
+    double dB = sqrt(pow(x - sensors[1].x, 2) + pow(y - sensors[1].y, 2));
+    double dC = sqrt(pow(x - sensors[2].x, 2) + pow(y - sensors[2].y, 2));
+    double dD = sqrt(pow(x - sensors[3].x, 2) + pow(y - sensors[3].y, 2));
+    double dE = sqrt(pow(x - sensors[4].x, 2) + pow(y - sensors[4].y, 2));
+    double dF = sqrt(pow(x - sensors[5].x, 2) + pow(y - sensors[5].y, 2));
 
-        // DEBUG: In ra sai số
-        // std::cout << "residual: " << fvec.transpose() << std::endl;
-
-        return 0;
+    if (dA < 1e-6 || dB < 1e-6 || dC < 1e-6 || dD < 1e-6 || dE < 1e-6 || dF < 1e-6) {
+        fjac.setZero();
+        return 1;
     }
 
-    // ========================================================================
-    // Hàm compute Jacobian matrix (đạo hàm riêng)
-    // Input:  xy = vector 2 chiều [x, y]
-    // Output: fjac = ma trận 3x2 (3 phương trình, 2 ẩn)
-    //         fjac(i,j) = dF_i / d(xy_j)
-    // 
-    // J = [dF0/dx  dF0/dy]
-    //     [dF1/dx  dF1/dy]
-    //     [dF2/dx  dF2/dy]
-    // ========================================================================
-    int df(const VectorXd& xy, MatrixXd& fjac) const {
-        double x = xy(0), y = xy(1);
-        
-        // Tính khoảng cách từ (x,y) đến mỗi cảm biến
-        double dA = sqrt(pow(x - sensors[0].x, 2) + pow(y - sensors[0].y, 2));
-        double dB = sqrt(pow(x - sensors[1].x, 2) + pow(y - sensors[1].y, 2));
-        double dC = sqrt(pow(x - sensors[2].x, 2) + pow(y - sensors[2].y, 2));
-        double dD = sqrt(pow(x - sensors[3].x, 2) + pow(y - sensors[3].y, 2));
-        double dE = sqrt(pow(x - sensors[4].x, 2) + pow(y - sensors[4].y, 2));
-        double dF = sqrt(pow(x - sensors[5].x, 2) + pow(y - sensors[5].y, 2));
+    fjac(0, 0) = ((x - sensors[1].x) / dB - (x - sensors[0].x) / dA) / v;
+    fjac(0, 1) = ((y - sensors[1].y) / dB - (y - sensors[0].y) / dA) / v;
+    fjac(1, 0) = ((x - sensors[2].x) / dC - (x - sensors[0].x) / dA) / v;
+    fjac(1, 1) = ((y - sensors[2].y) / dC - (y - sensors[0].y) / dA) / v;
+    fjac(2, 0) = ((x - sensors[3].x) / dD - (x - sensors[0].x) / dA) / v;
+    fjac(2, 1) = ((y - sensors[3].y) / dD - (y - sensors[0].y) / dA) / v;
+    fjac(3, 0) = ((x - sensors[4].x) / dE - (x - sensors[0].x) / dA) / v;
+    fjac(3, 1) = ((y - sensors[4].y) / dE - (y - sensors[0].y) / dA) / v;
+    fjac(4, 0) = ((x - sensors[5].x) / dF - (x - sensors[0].x) / dA) / v;
+    fjac(4, 1) = ((y - sensors[5].y) / dF - (y - sensors[0].y) / dA) / v;
 
-        // Tránh chia cho 0
-        if (dA < 1e-6 || dB < 1e-6 || dC < 1e-6 || dD < 1e-6 || dE < 1e-6 || dF < 1e-6) {
-            fjac.setZero();
-            return 1; // Error flag
-        }
-
-        // Đạo hàm của residual TDOA theo x,y
-        // dF_i/dx = (1/v) * d(d_i - d_A)/dx
-        //         = (1/v) * ((x - x_i)/d_i - (x - x_A)/d_A)
-        
-        // Row 0: TDOA B vs A
-        fjac(0, 0) = ((x - sensors[1].x) / dB - (x - sensors[0].x) / dA) / v;
-        fjac(0, 1) = ((y - sensors[1].y) / dB - (y - sensors[0].y) / dA) / v;
-        
-        // Row 1: TDOA C vs A
-        fjac(1, 0) = ((x - sensors[2].x) / dC - (x - sensors[0].x) / dA) / v;
-        fjac(1, 1) = ((y - sensors[2].y) / dC - (y - sensors[0].y) / dA) / v;
-        
-        // Row 2: TDOA D vs A
-        fjac(2, 0) = ((x - sensors[3].x) / dD - (x - sensors[0].x) / dA) / v;
-        fjac(2, 1) = ((y - sensors[3].y) / dD - (y - sensors[0].y) / dA) / v;
-        
-        // Row 3: TDOA E vs A
-        fjac(3, 0) = ((x - sensors[4].x) / dE - (x - sensors[0].x) / dA) / v;
-        fjac(3, 1) = ((y - sensors[4].y) / dE - (y - sensors[0].y) / dA) / v;
-        
-        // Row 4: TDOA F vs A
-        fjac(4, 0) = ((x - sensors[5].x) / dF - (x - sensors[0].x) / dA) / v;
-        fjac(4, 1) = ((y - sensors[5].y) / dF - (y - sensors[0].y) / dA) / v;
-
-        // DEBUG: In ra Jacobian
-        // std::cout << "Jacobian:\n" << fjac << std::endl;
-
-        return 0;
-    }
-};
+    return 0;
+}
 
 // ============================================================================
 // Hàm chính: Tính toán vị trí (x,y) từ timestamp 6 cảm biến

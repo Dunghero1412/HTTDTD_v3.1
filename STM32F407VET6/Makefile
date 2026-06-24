@@ -72,6 +72,7 @@ CPP_SOURCES := \
     Core/Src/spi_slave.cpp \
     Core/Src/bme280.cpp \
     Core/Src/temperature_logger.cpp \
+    Core/Src/DebugUART.cpp \
 
 # C source (HAL, CMSIS)
 C_SOURCES := \

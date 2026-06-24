@@ -2,9 +2,9 @@
 // File: NodeController.cpp
 // ============================================================================
 #include "NodeController.hpp"
+#include "DebugUART.hpp"
 #include "TDOASolver.hpp"
 #include <lgpio.h>
-#include <iostream>
 #include <sstream>
 #include <chrono>
 #include <thread>
@@ -27,7 +27,7 @@ NodeController::NodeController(const NodeID& id)
     // Khởi tạo GPIO
     gpioHandle = lgGpiochipOpen(0); // /dev/gpiochip0
     if (gpioHandle < 0) {
-        std::cerr << "Failed to open GPIO chip\n";
+        DebugUART::log("Failed to open GPIO chip\n");
         exit(1);
     }
     // nhận output, thiết lập mức thấp ban đầu
@@ -41,14 +41,14 @@ NodeController::NodeController(const NodeID& id)
 
     // Khởi tạo SPI
     if (!spi.init(SPI_CHANNEL, SPI_SPEED)) {
-        std::cerr << "SPI init failed\n"; // log lỗi , dừng chương trình
+        DebugUART::log("SPI init failed\n"); // log lỗi , dừng chương trình
         exit(1);
     }
 
     // Khởi tạo LoRa
     int sf = SF_BY_COL[nodeID.col - 1]; // col index 0..4
     if (!lora.init(LORA_UART, LORA_BAUD, sf, FREQ_MHZ)) {
-        std::cerr << "LoRa init failed\n"; // log lỗi , dừng chương trình
+        DebugUART::log("LoRa init failed\n"); // log lỗi , dừng chương trình
         exit(1);
     }
     lora.setReceiveCallback([this](const std::string& msg) { onLoRaReceived(msg); }); // callback khi nhận được message
@@ -71,7 +71,7 @@ void NodeController::run() {
             auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
                                now - triggerStartTime).count();
             if (elapsed >= TIMEOUT_CAPTURE) {
-                std::cout << "Timeout capture\n";
+                DebugUART::log("Timeout capture\n");
                 finishCycle();
                 continue;
             }
@@ -89,7 +89,7 @@ void NodeController::run() {
                     pulseReceivedComplete();
                     captureCount++;
                     if (captureCount >= MAX_CAPTURES) {
-                        std::cout << "Đủ 3 gói, kết thúc\n";
+                        DebugUART::log("Đủ 3 gói, kết thúc\n");
                         finishCycle();
                     }
                 }
@@ -146,11 +146,11 @@ void NodeController::processCommand(const std::string& cmd) {
         if (isUp) {
             setMotor(true);
             state = MARKING; // chuyển trạng thái sang MARKING
-            std::cout << "MARKING ON\n";
+            DebugUART::log("MARKING ON\n");
         } else if (isDown) {
             setMotor(false);
             state = IDLE; // chuyển trạng thái sang IDLE
-            std::cout << "MARKING OFF\n";
+            DebugUART::log("MARKING OFF\n");
         }
         return;
     }
@@ -190,11 +190,11 @@ void NodeController::processCommand(const std::string& cmd) {
             setMotor(true);
             motorStartTime = std::chrono::steady_clock::now();
             state = MOTOR_ON_DELAY;
-            std::cout << "Motor ON, chờ 10s\n";
+            DebugUART::log("Motor ON, chờ 10s\n");
         }
     } else if (isDown) {
         if (state == ACTIVE_CAPTURE || state == MOTOR_ON_DELAY) {
-            std::cout << "Nhận lệnh DOWN, hủy\n";
+            DebugUART::log("Nhận lệnh DOWN, hủy\n");
             finishCycle();
         }
     }

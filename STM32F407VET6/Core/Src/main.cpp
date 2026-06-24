@@ -22,6 +22,7 @@ extern "C" {
 #include "bme280.hpp"
 #include "spi_slave.hpp"
 #include "temperature_logger.hpp"
+#include "DebugUART.hpp"
 
 // ---------- Handle các ngoại vi (khai báo toàn cục) ----------
 UART_HandleTypeDef huart1;
@@ -61,6 +62,8 @@ int main(void) {
     // Khởi tạo các ngoại vi
     MX_GPIO_Init();
     MX_USART1_UART_Init();
+    DebugUART::init(&huart1);
+    DebugUART::setFileBufferEnabled(true);
     MX_SPI2_Init();
     MX_SPI3_Init();
     
@@ -74,18 +77,18 @@ int main(void) {
     
     // Khởi tạo BME280
     if (!BME280::init()) {
-        printf("BME280 init failed!\r\n");
+        DebugUART::log("BME280 init failed!\r\n");
     } else {
-        printf("BME280 OK\r\n");
+        DebugUART::log("BME280 OK\r\n");
     }
     
     // Khởi tạo bộ gửi nhiệt độ
     TemperatureLogger::init();
     
-    printf("TDOA System ready.\r\n");
-    printf("MCU: STM32F407VET6 @ 168MHz\r\n");
-    printf("TIM2 (A,B,C,D): 84MHz, ~11.9ns/tick\r\n");
-    printf("TIM5 (E,F): 84MHz, ~11.9ns/tick\r\n");
+    DebugUART::log("TDOA System ready.\r\n");
+    DebugUART::log("MCU: STM32F407VET6 @ 168MHz\r\n");
+    DebugUART::log("TIM2 (A,B,C,D): 84MHz, ~11.9ns/tick\r\n");
+    DebugUART::log("TIM5 (E,F): 84MHz, ~11.9ns/tick\r\n");
     
     // Vòng lặp chính
     while (1) {
