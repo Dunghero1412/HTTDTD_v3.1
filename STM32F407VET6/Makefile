@@ -54,13 +54,13 @@ INCLUDES := \
 # ---------- Cờ cho C, C++ và Assembler ----------
 CFLAGS   := $(MCU) $(COMMON_FLAGS) $(MCU_DEFINES) $(INCLUDES) -std=gnu11 -fdata-sections -ffunction-sections
 CXXFLAGS := $(MCU) $(COMMON_FLAGS) $(MCU_DEFINES) $(INCLUDES) -std=c++11 -fno-rtti -fno-exceptions -fdata-sections -ffunction-sections  -isystem $(PROJECT_DIR)/Drivers/CMSIS/Include
-CxXFLAGS += --specs=nosys.specs
+#CXXFLAGS += --specs=nosys.specs
 ASFLAGS  := $(MCU) $(MCU_DEFINES) $(INCLUDES) -c
 
 # ---------- Cờ liên kết ----------
 LDSCRIPT := $(PROJECT_DIR)/STM32F407VETx_FLASH.ld
 LIBS     := -lc -lm -lnosys -lgcc
-LDFLAGS  := $(MCU) --specs=nano.specs --specs=nosys.specs  -T$(LDSCRIPT) $(LIBS) \
+LDFLAGS  := $(MCU)   -T$(LDSCRIPT) $(LIBS) \
             -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref \
             -Wl,--gc-sections 
 

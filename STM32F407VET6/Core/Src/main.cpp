@@ -28,6 +28,8 @@ extern "C" {
 UART_HandleTypeDef huart1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
+TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim5;
 
 // ---------- Khai báo hàm trước ----------
 extern "C" {
@@ -238,7 +240,7 @@ void MX_SPI3_Init(void) {
 void MX_TIM5_Init(void) {
     __HAL_RCC_TIM5_CLK_ENABLE();
     
-    TIM_HandleTypeDef htim5 = {0};
+    //TIM_HandleTypeDef htim5 = {0};
     htim5.Instance = TIM5;
     htim5.Init.Prescaler = 0;               // Không chia, tần số timer = 84MHz
     htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
@@ -264,8 +266,8 @@ void MX_TIM5_Init(void) {
     HAL_NVIC_SetPriority(TIM5_IRQn, 1, 0);
     HAL_NVIC_EnableIRQ(TIM5_IRQn);
     __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_UPDATE);
-    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC5); // Sensor E
-    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC6); // Sensor F
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC1); // Sensor E
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC2); // Sensor F
 
     // Khởi động timer
     HAL_TIM_Base_Start(&htim5);
@@ -278,7 +280,7 @@ void MX_TIM5_Init(void) {
 void MX_TIM2_Init(void) {
     __HAL_RCC_TIM2_CLK_ENABLE();
     
-    TIM_HandleTypeDef htim2 = {0};
+    //TIM_HandleTypeDef htim2 = {0};
     htim2.Instance = TIM2;
     htim2.Init.Prescaler = 0;               // Không chia, tần số timer = 84MHz
     htim2.Init.CounterMode = TIM_COUNTERMODE_UP;

@@ -149,7 +149,8 @@ void NodeManager::evaluateNode(const QString &nodeId) {
     } else {
         node->avgX = node->avgY = 0;
     }
-    node->classification = ScoreCalculator::classify(node->totalScore);
+    //node->classification = ScoreCalculator::classify(node->totalScore);
+    node->classification = QString::fromStdString(ScoreCalculator::classify(node->totalScore));
 }
 
 NodeInfo* NodeManager::findNode(const QString &id) {

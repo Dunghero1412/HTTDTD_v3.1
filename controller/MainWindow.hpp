@@ -31,7 +31,8 @@ private:
     void setupUI();
     void createScoreboardTable();
     void createStatusTable();
-    void createControlButtons();
+    //void createControlButtons();
+    QLayout* createControlButtons();
     QPushButton* createNodeButton(const QString &text);
 
     // UDP và logic

@@ -49,8 +49,8 @@ static void enableCaptureChannels() {
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_CC2);
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_CC3);
     __HAL_TIM_ENABLE_IT(&htim2, TIM_IT_CC4);
-    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC5);
-    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC6);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC1);
+    __HAL_TIM_ENABLE_IT(&htim5, TIM_IT_CC2);
 }
 
 // Tắt ngắt capture của cả 6 kênh
@@ -59,8 +59,8 @@ static void disableCaptureChannels() {
     __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC2);
     __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC3);
     __HAL_TIM_DISABLE_IT(&htim2, TIM_IT_CC4);
-    __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC5);
-    __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC6);
+    __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC1);
+    __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC2);
 }
 
 // ---------- Triển khai các phương thức public ----------
@@ -100,8 +100,8 @@ void TDOAManager::init() {
     HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_4);
     
     // Cấu hình kênh capture cho TIM5
-    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_5);
-    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_6);
+    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_1);
+    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_2);
 
     // Bật ngắt tràn (update) và đặt độ ưu tiên thấp hơn ngắt capture
     HAL_NVIC_SetPriority(TIM2_IRQn, 1, 0);
@@ -345,7 +345,7 @@ void TDOAManager::onCaptureCH5(uint32_t val) {
         captures[4].tick = val;
         channelCaptured[4] = true;
         captureCount++;
-        __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC5);
+        __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC1);
     }
 }
 
@@ -362,7 +362,7 @@ void TDOAManager::onCaptureCH6(uint32_t val) {
         captures[5].tick = val;
         channelCaptured[5] = true;
         captureCount++;
-        __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC6);
+        __HAL_TIM_DISABLE_IT(&htim5, TIM_IT_CC2);
     }
 }
 
@@ -484,15 +484,15 @@ extern "C" void TIM2_IRQHandler(void) {
 // ngắt TIM5 : xử lý capture và overflow
 extern "C" void TIM5_IRQHandler(void) {
     // Capture kênh 5
-    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC5) != RESET) {
-        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC5);
-        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_5);
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC1) != RESET) {
+        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC1);
+        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_1);
         TDOAManager::onCaptureCH5(cap);
     }
     // Capture kênh 6
-    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC6) != RESET) {
-        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC6);
-        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_6);
+    if (__HAL_TIM_GET_FLAG(&htim5, TIM_FLAG_CC2) != RESET) {
+        __HAL_TIM_CLEAR_FLAG(&htim5, TIM_FLAG_CC2);
+        uint32_t cap = HAL_TIM_ReadCapturedValue(&htim5, TIM_CHANNEL_2);
         TDOAManager::onCaptureCH6(cap);
     }
     // Tràn update

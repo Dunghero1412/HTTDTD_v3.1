@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QTimer>
 #include <QMap>
+#include <QDateTime>
 #include <QString>
 #include <array>
 #include "ScoreCalculator.hpp"
