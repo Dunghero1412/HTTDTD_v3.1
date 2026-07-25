@@ -1,0 +1,38 @@
+---
+description: HTTDTD v3.1 - quy ước dự án TDOA quân sự
+alwaysApply: true
+---
+
+# HTTDTD v3.1
+
+Hệ thống TDOA xác định tọa độ va chạm trên bia bắn. Repo: https://github.com/Dunghero1412/HTTDTD_v3.1
+
+## Kiến trúc (3 thành phần)
+
+1. **STM32F407VET6/** — Firmware C++11, `arm-none-eabi-g++`, không RTTI/exceptions
+2. **tdoa_node/** — Node Raspberry Pi, C++17, SPI + LoRa + TDOASolver (Eigen)
+3. **controller/** — GUI Qt5, C++17, UDP gateway LoRa
+
+Build: `make` ở root hoặc `make -C <thư mục>`. Môi trường: Dev Container hoặc Linux/WSL.
+
+## Quy ước code
+
+- Chú thích bằng **tiếng Việt**
+- STM32: C++11, HAL/CMSIS có sẵn trong repo — không thêm dependency nặng
+- Node/Controller: C++17, Eigen3
+- Thay đổi timer, prescaler, vị trí sensor, ngưỡng comparator → cần hiệu chuẩn lại
+
+## File quan trọng
+
+- `STM32F407VET6/Core/Inc/system.h` — GPIO, timer
+- `STM32F407VET6/Core/Src/tdoa_manager.cpp` — logic thu timestamp
+- `tdoa_node/src/Config.hpp` — GPIO, SPI, LoRa, vị trí sensor
+- `tdoa_node/src/TDOASolver.cpp` — Chan + Levenberg-Marquardt
+- `controller/ScoreCalculator.cpp` — tính điểm, xếp loại
+- `CODEMAP.md` — bản đồ mã nguồn chi tiết
+
+## Phạm vi sửa
+
+- Chỉ sửa code liên quan task; không refactor không yêu cầu
+- Không commit trừ khi user yêu cầu
+- Không tạo file markdown mới trừ khi được yêu cầu

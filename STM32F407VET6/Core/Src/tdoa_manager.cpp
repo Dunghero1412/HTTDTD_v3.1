@@ -94,14 +94,14 @@ void TDOAManager::init() {
     icConfig.ICSelection = TIM_ICSELECTION_DIRECTTI;
     icConfig.ICPrescaler = TIM_ICPSC_DIV1;
     icConfig.ICFilter = 0;
-    HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_1);
-    HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_2);
-    HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_3);
-    HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_4);
+    HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_1); // sensor A
+    HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_2); // sensor B
+    HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_3); // sensor C
+    HAL_TIM_IC_ConfigChannel(&htim2, &icConfig, TIM_CHANNEL_4); // sensor D
     
     // Cấu hình kênh capture cho TIM5
-    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_1);
-    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_2);
+    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_1); // sensor E
+    HAL_TIM_IC_ConfigChannel(&htim5, &icConfig, TIM_CHANNEL_2); // sensor F
 
     // Bật ngắt tràn (update) và đặt độ ưu tiên thấp hơn ngắt capture
     HAL_NVIC_SetPriority(TIM2_IRQn, 1, 0);

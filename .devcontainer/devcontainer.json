@@ -1,0 +1,38 @@
+{
+  "name": "HTTDTD v3.1",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspaces/HTTDTD_v3.1",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/HTTDTD_v3.1,type=bind",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.makefile-tools",
+        "marus25.cortex-debug",
+        "jeff-hykin.better-cpp-syntax",
+        "ms-vscode.cmake-tools"
+      ],
+      "settings": {
+        "makefile.makeDirectory": "${workspaceFolder}",
+        "makefile.configureOnOpen": false,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "make -C STM32F407VET6 check-tools && pkg-config --modversion Qt5Widgets && echo 'Dev container sẵn sàng.'",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": false
+    }
+  },
+  "runArgs": [
+    "--privileged"
+  ],
+  "mounts": [
+    "source=/dev/bus/usb,target=/dev/bus/usb,type=bind"
+  ],
+  "forwardPorts": [1680, 1780]
+}

@@ -1,0 +1,78 @@
+{
+  "configurations": [
+    {
+      "name": "STM32F407 (ARM)",
+      "includePath": [
+        "${workspaceFolder}/STM32F407VET6/Core/Inc",
+        "${workspaceFolder}/STM32F407VET6/Drivers/STM32F4xx_HAL_Driver/Inc",
+        "${workspaceFolder}/STM32F407VET6/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
+        "${workspaceFolder}/STM32F407VET6/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+        "${workspaceFolder}/STM32F407VET6/Drivers/CMSIS/Include"
+      ],
+      "defines": [
+        "STM32F407xx",
+        "STM32F4XX",
+        "USE_HAL_DRIVER",
+        "__GNUC__"
+      ],
+      "compilerPath": "/usr/bin/arm-none-eabi-g++",
+      "cStandard": "c11",
+      "cppStandard": "c++11",
+      "intelliSenseMode": "gcc-arm"
+    },
+    {
+      "name": "Controller (Qt5)",
+      "includePath": [
+        "${workspaceFolder}/controller",
+        "/usr/include/eigen3",
+        "/usr/include/x86_64-linux-gnu/qt5",
+        "/usr/include/x86_64-linux-gnu/qt5/QtCore",
+        "/usr/include/x86_64-linux-gnu/qt5/QtWidgets",
+        "/usr/include/x86_64-linux-gnu/qt5/QtNetwork"
+      ],
+      "defines": [
+        "QT_WIDGETS_LIB",
+        "QT_NETWORK_LIB",
+        "QT_CORE_LIB"
+      ],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64"
+    },
+    {
+      "name": "TDOA Node (RPi)",
+      "includePath": [
+        "${workspaceFolder}/tdoa_node/src",
+        "/usr/include/eigen3"
+      ],
+      "defines": [],
+      "compilerPath": "/usr/bin/g++",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64"
+    },
+    {
+      "name": "Win32 (IntelliSense only)",
+      "includePath": [
+        "${workspaceFolder}/STM32F407VET6/Core/Inc",
+        "${workspaceFolder}/STM32F407VET6/Drivers/STM32F4xx_HAL_Driver/Inc",
+        "${workspaceFolder}/STM32F407VET6/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy",
+        "${workspaceFolder}/STM32F407VET6/Drivers/CMSIS/Device/ST/STM32F4xx/Include",
+        "${workspaceFolder}/STM32F407VET6/Drivers/CMSIS/Include",
+        "${workspaceFolder}/controller",
+        "${workspaceFolder}/tdoa_node/src"
+      ],
+      "defines": [
+        "STM32F407xx",
+        "STM32F4XX",
+        "USE_HAL_DRIVER"
+      ],
+      "compilerPath": "",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-msvc-x64"
+    }
+  ],
+  "version": 4
+}

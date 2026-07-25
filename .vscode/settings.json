@@ -1,0 +1,35 @@
+{
+  "files.associations": {
+    "*.hpp": "cpp",
+    "system.h": "c",
+    "stm32f4xx_hal*.h": "c"
+  },
+  "C_Cpp.default.configurationProvider": "",
+  "C_Cpp.default.compileCommands": "",
+  "C_Cpp.errorSquiggles": "enabled",
+  "makefile.makeDirectory": "${workspaceFolder}",
+  "makefile.configureOnOpen": false,
+  "makefile.extensionOutputFolder": "./.vscode",
+  "makefile.launchConfigurations": [
+    {
+      "cwd": "${workspaceFolder}",
+      "binaryPath": "${workspaceFolder}/STM32F407VET6/build/tdoa_f407.elf",
+      "binaryArgs": []
+    }
+  ],
+  "search.exclude": {
+    "**/STM32F407VET6/Drivers/CMSIS/Documentation/**": true,
+    "**/STM32F407VET6/build/**": true
+  },
+  "files.exclude": {
+    "**/*.o": true
+  },
+  "[cpp]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  },
+  "[c]": {
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true
+  }
+}
